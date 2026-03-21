@@ -117,7 +117,7 @@ function SiteFormModal({ title, initial, allSites, onClose, onSave }) {
     } catch (e) {
       clearInterval(timerRef.current)
       if (e.message === 'API_KEY_MISSING') {
-        setAiError('API 키가 설정되지 않았습니다. .env에 VITE_ANTHROPIC_API_KEY를 추가해주세요.')
+        setAiError('API 키가 설정되지 않았습니다. .env에 VITE_GEMINI_API_KEY를 추가해주세요.')
       } else {
         setAiError('AI 분석에 실패했어요. 직접 입력해주세요.')
       }
