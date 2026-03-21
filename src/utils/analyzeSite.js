@@ -33,29 +33,34 @@ export async function analyzeSite(url) {
   "hasFreeplan": true또는false
 }`
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
-      'x-api-key': apiKey,
+      'Content-Type': 'application/json',
+      'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-      'content-type': 'application/json',
+      'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    })
   })
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    const error = new Error(err.error?.message || res.statusText)
-    error.status = res.status
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    const error = new Error(err.error?.message || response.statusText)
+    error.status = response.status
     throw error
   }
 
-  const data = await res.json()
+  const data = await response.json()
   const text = data.content[0].text
   const clean = text.replace(/```json|```/g, '').trim()
   return JSON.parse(clean)
