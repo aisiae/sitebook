@@ -1,8 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
-
 const LOADING_MESSAGES = [
   '🔍 사이트 정보 수집 중...',
-  '✨ Gemini가 내용을 작성하고 있어요...',
+  '✨ Claude가 내용을 작성하고 있어요...',
   '📝 마무리 중...',
 ]
 
@@ -13,11 +11,8 @@ export function getLoadingMessage(elapsed) {
 }
 
 export async function analyzeSite(url) {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
   if (!apiKey) throw new Error('API_KEY_MISSING')
-
-  const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
   const prompt = `다음 웹사이트 URL을 분석해서 아래 JSON 형식으로만 응답해줘.
 다른 말은 하지 말고 JSON만 반환해줘.
@@ -38,9 +33,30 @@ export async function analyzeSite(url) {
   "hasFreeplan": true또는false
 }`
 
-  const result = await model.generateContent(prompt)
-  const text = result.response.text()
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  })
 
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    const error = new Error(err.error?.message || res.statusText)
+    error.status = res.status
+    throw error
+  }
+
+  const data = await res.json()
+  const text = data.content[0].text
   const clean = text.replace(/```json|```/g, '').trim()
   return JSON.parse(clean)
 }
