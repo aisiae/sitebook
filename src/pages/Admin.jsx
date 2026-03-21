@@ -121,7 +121,7 @@ function SiteFormModal({ title, initial, allSites, onClose, onSave }) {
       } else if (e.status === 429 || e.message?.includes('429') || e.message?.includes('quota') || e.message?.includes('RESOURCE_EXHAUSTED')) {
         setAiError('API 요청 한도를 초과했습니다. 잠시 후 다시 시도하거나 직접 입력해주세요.')
       } else {
-        setAiError(`AI 분석에 실패했어요. 직접 입력해주세요.`)
+        setAiError(`AI 분석 실패 (${e.status || ''} ${e.message || ''}). 직접 입력해주세요.`)
       }
     } finally {
       setAnalyzing(false)
