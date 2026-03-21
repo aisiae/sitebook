@@ -4,6 +4,7 @@ import Navbar from '../common/Navbar'
 import AddSiteModal from '../common/AddSiteModal'
 import CreateCollectionModal from '../collections/CreateCollectionModal'
 import { FaviconImg } from '../../utils/favicon'
+import { useCategories } from '../../hooks/useCategories'
 import { STATUS_LABEL, STATUS_STYLE } from '../../lib/constants'
 
 const C = {
@@ -20,28 +21,6 @@ const LAYOUT_OPTIONS = [
   { type: 'A', icon: '⊞', label: '카드' },
   { type: 'B', icon: '≡', label: '리스트' },
   { type: 'C', icon: '⊡', label: '폴더' },
-]
-
-const SIDEBAR_CATS = [
-  { label: '전체',       emoji: '📋', cat: null             },
-  { label: '업무',       emoji: '💼', cat: '업무'           },
-  { label: 'SNS',       emoji: '📱', cat: 'SNS'            },
-  { label: '쇼핑',      emoji: '🛍',  cat: '쇼핑'           },
-  { label: '금융',      emoji: '💳',  cat: '금융'           },
-  { label: '개발',      emoji: '💻',  cat: '개발'           },
-  { label: '엔터',      emoji: '🎬',  cat: '엔터테인먼트'   },
-  { label: '기타',      emoji: '📁',  cat: '기타'           },
-]
-
-const CAT_TABS = [
-  { label: '전체',    cat: null           },
-  { label: '업무',    cat: '업무'          },
-  { label: 'SNS',    cat: 'SNS'           },
-  { label: '쇼핑',   cat: '쇼핑'          },
-  { label: '금융',   cat: '금융'           },
-  { label: '개발',   cat: '개발'           },
-  { label: '엔터',   cat: '엔터테인먼트'   },
-  { label: '기타',   cat: '기타'          },
 ]
 
 function relativeDate(ts) {
@@ -181,19 +160,27 @@ function ListRow({ site, onOpen, onEdit, isDeleting, onDeleteStart, onDeleteCanc
 // ─────────────────────────────────────────────
 export default function LayoutB({ sites, loading, addSite, updateSite, updateLastVisited, deleteSite, layoutType, setLayoutType, createCollection }) {
   const navigate = useNavigate()
-  const [activeCat, setActiveCat]     = useState(null)
-  const [search, setSearch]           = useState('')
-  const [sortField, setSortField]     = useState('lastVisitedAt')
-  const [sortDir, setSortDir]         = useState('desc')
-  const [showAdd, setShowAdd]         = useState(false)
-  const [editingSite, setEditingSite] = useState(null)
-  const [deletingId, setDeletingId]   = useState(null)
+  const { categories } = useCategories()
+  const [activeCat, setActiveCat]         = useState(null)
+  const [activeSubcat, setActiveSubcat]   = useState(null)
+  const [search, setSearch]               = useState('')
+  const [sortField, setSortField]         = useState('lastVisitedAt')
+  const [sortDir, setSortDir]             = useState('desc')
+  const [showAdd, setShowAdd]             = useState(false)
+  const [editingSite, setEditingSite]     = useState(null)
+  const [deletingId, setDeletingId]       = useState(null)
   const [showCreateCollection, setShowCreateCollection] = useState(false)
+
+  const activeCatObj = categories.find(c => c.name === activeCat)
+  const subcats = activeCatObj?.subcategories ?? []
+
+  const handleCatChange = (catName) => { setActiveCat(catName); setActiveSubcat(null) }
 
   // 필터
   const q        = search.trim().toLowerCase()
   const filtered = sites
-    .filter(s => !activeCat || s.category === activeCat)
+    .filter(s => !activeCat    || s.category    === activeCat)
+    .filter(s => !activeSubcat || s.subcategory === activeSubcat)
     .filter(s => !q || s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q))
 
   // 정렬
@@ -227,7 +214,7 @@ export default function LayoutB({ sites, loading, addSite, updateSite, updateLas
   }
 
   const catCount  = (cat) => cat ? sites.filter(s => s.category === cat).length : sites.length
-  const activeLabel = SIDEBAR_CATS.find(c => c.cat === activeCat)?.label ?? '전체'
+  const activeLabel = activeCat ? (categories.find(c => c.name === activeCat)?.name ?? activeCat) : '전체'
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
@@ -253,14 +240,31 @@ export default function LayoutB({ sites, loading, addSite, updateSite, updateLas
 
           {/* 카테고리 목록 */}
           <div style={{ flex: 1, padding: '8px' }}>
-            {SIDEBAR_CATS.map(({ label, emoji, cat }) => {
-              const on    = activeCat === cat
-              const count = catCount(cat)
-              if (count === 0 && cat !== null) return null
+            {/* 전체 */}
+            <div
+              onClick={() => handleCatChange(null)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '8px 10px', borderRadius: 8, cursor: 'pointer', marginBottom: 1,
+                background: !activeCat ? C.primaryLight : 'transparent',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => { if (activeCat) e.currentTarget.style.background = '#f8f7ff' }}
+              onMouseLeave={e => { if (activeCat) e.currentTarget.style.background = 'transparent' }}
+            >
+              <span style={{ fontSize: 14, lineHeight: 1 }}>📋</span>
+              <span style={{ flex: 1, fontSize: 13, fontWeight: !activeCat ? 700 : 500, color: !activeCat ? C.primary : '#555' }}>전체</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: !activeCat ? C.primary : '#ccc' }}>{sites.length}</span>
+            </div>
+            {/* 동적 카테고리 */}
+            {categories.map(cat => {
+              const on    = activeCat === cat.name
+              const count = catCount(cat.name)
+              if (count === 0) return null
               return (
                 <div
-                  key={label}
-                  onClick={() => setActiveCat(cat)}
+                  key={cat.id}
+                  onClick={() => handleCatChange(cat.name)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 7,
                     padding: '8px 10px', borderRadius: 8, cursor: 'pointer', marginBottom: 1,
@@ -270,9 +274,9 @@ export default function LayoutB({ sites, loading, addSite, updateSite, updateLas
                   onMouseEnter={e => { if (!on) e.currentTarget.style.background = '#f8f7ff' }}
                   onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'transparent' }}
                 >
-                  <span style={{ fontSize: 14, lineHeight: 1 }}>{emoji}</span>
+                  <span style={{ fontSize: 14, lineHeight: 1 }}>{cat.emoji}</span>
                   <span style={{ flex: 1, fontSize: 13, fontWeight: on ? 700 : 500, color: on ? C.primary : '#555' }}>
-                    {label}
+                    {cat.name}
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 600, color: on ? C.primary : '#ccc' }}>
                     {count}
@@ -368,28 +372,79 @@ export default function LayoutB({ sites, loading, addSite, updateSite, updateLas
           </div>
 
           {/* 카테고리 탭 */}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '0 24px 16px' }}>
-            {CAT_TABS.map(({ label, cat }) => {
-              const on = activeCat === cat
-              const count = cat ? sites.filter(s => s.category === cat).length : sites.length
-              if (count === 0 && cat !== null) return null
-              return (
+          <div style={{ padding: '0 24px 16px' }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {/* 전체 탭 */}
+              <button
+                onClick={() => handleCatChange(null)}
+                style={{
+                  padding: '5px 14px', borderRadius: 999, border: 'none',
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                  background: !activeCat ? C.primary : '#fff',
+                  color:      !activeCat ? '#fff'    : '#666',
+                  boxShadow:  !activeCat ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
+                }}
+              >
+                전체 <span style={{ marginLeft: 4, opacity: 0.7, fontWeight: 500 }}>{sites.length}</span>
+              </button>
+              {/* 동적 카테고리 탭 */}
+              {categories.map(cat => {
+                const on    = activeCat === cat.name
+                const count = sites.filter(s => s.category === cat.name).length
+                if (count === 0) return null
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCatChange(cat.name)}
+                    style={{
+                      padding: '5px 14px', borderRadius: 999, border: 'none',
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                      background: on ? C.primary : '#fff',
+                      color:      on ? '#fff'    : '#666',
+                      boxShadow:  on ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
+                    }}
+                  >
+                    {cat.name} <span style={{ marginLeft: 4, opacity: 0.7, fontWeight: 500 }}>{count}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* 서브카테고리 탭 */}
+            {subcats.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
                 <button
-                  key={label}
-                  onClick={() => setActiveCat(cat)}
+                  onClick={() => setActiveSubcat(null)}
                   style={{
-                    padding: '5px 14px', borderRadius: 999, border: 'none',
-                    fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                    background: on ? C.primary : '#fff',
-                    color:      on ? '#fff'    : '#666',
-                    boxShadow:  on ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
+                    padding: '3px 12px', borderRadius: 999,
+                    border: `1px solid ${!activeSubcat ? C.primary : '#e0dff8'}`,
+                    fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    background: !activeSubcat ? C.primaryLight : '#fff',
+                    color:      !activeSubcat ? C.primary       : '#888',
                   }}
                 >
-                  {label}
-                  <span style={{ marginLeft: 4, opacity: 0.7, fontWeight: 500 }}>{count}</span>
+                  전체
                 </button>
-              )
-            })}
+                {subcats.map(sub => {
+                  const on = activeSubcat === sub.name
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => setActiveSubcat(sub.name)}
+                      style={{
+                        padding: '3px 12px', borderRadius: 999,
+                        border: `1px solid ${on ? C.primary : '#e0dff8'}`,
+                        fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                        background: on ? C.primaryLight : '#fff',
+                        color:      on ? C.primary      : '#888',
+                      }}
+                    >
+                      {sub.name}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* 테이블 */}
@@ -430,7 +485,7 @@ export default function LayoutB({ sites, loading, addSite, updateSite, updateLas
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
                 <div style={{ fontSize: 36, marginBottom: 12 }}>{search ? '🔍' : '📂'}</div>
                 <p style={{ fontSize: 14, color: '#666', margin: '0 0 4px' }}>
-                  {search ? `'${search}' 검색 결과가 없어요.` : activeCat ? `'${activeLabel}' 카테고리에 사이트가 없어요.` : '아직 등록된 사이트가 없어요.'}
+                  {search ? `'${search}' 검색 결과가 없어요.` : activeCat ? `'${activeCat}' 카테고리에 사이트가 없어요.` : '아직 등록된 사이트가 없어요.'}
                 </p>
                 {!search && (
                   <button

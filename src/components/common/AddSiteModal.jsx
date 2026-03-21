@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { CATEGORIES, STATUS_LABEL } from '../../lib/constants'
+import { useCategories } from '../../hooks/useCategories'
+import { STATUS_LABEL } from '../../lib/constants'
 
 const C = { primary: '#534AB7', dark: '#2d2a6e', btnRadius: '10px' }
 
@@ -12,21 +13,30 @@ const labelStyle = {
   fontSize: 13, fontWeight: 600, color: '#444', marginBottom: 6, display: 'block',
 }
 
-// initial 없으면 추가 모드, initial 있으면 수정 모드
 export default function AddSiteModal({ onClose, onSave, initial = null }) {
   const isEdit = !!initial
+  const { categories } = useCategories()
+
   const [form, setForm] = useState({
-    name:     initial?.name     ?? '',
-    url:      initial?.url      ?? '',
-    category: initial?.category ?? '',
-    loginId:  initial?.loginId  ?? '',
-    memo:     initial?.memo     ?? '',
-    status:   initial?.status   ?? 'active',
+    name:        initial?.name        ?? '',
+    url:         initial?.url         ?? '',
+    category:    initial?.category    ?? '',
+    subcategory: initial?.subcategory ?? '',
+    loginId:     initial?.loginId     ?? '',
+    memo:        initial?.memo        ?? '',
+    status:      initial?.status      ?? 'active',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
 
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }))
+
+  const handleCategoryChange = (e) => {
+    setForm(f => ({ ...f, category: e.target.value, subcategory: '' }))
+  }
+
+  const selectedCatObj = categories.find(c => c.name === form.category)
+  const subcats = selectedCatObj?.subcategories ?? []
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -73,11 +83,26 @@ export default function AddSiteModal({ onClose, onSave, initial = null }) {
           </div>
           <div>
             <label style={labelStyle}>카테고리 *</label>
-            <select style={{ ...inputStyle, color: form.category ? '#1a1a2e' : '#aaa' }} value={form.category} onChange={set('category')}>
+            <select style={{ ...inputStyle, color: form.category ? '#1a1a2e' : '#aaa' }} value={form.category} onChange={handleCategoryChange}>
               <option value="" disabled>카테고리 선택</option>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {categories.map(c => (
+                <option key={c.id} value={c.name}>{c.emoji} {c.name}</option>
+              ))}
             </select>
           </div>
+
+          {/* 서브카테고리: 선택한 카테고리에 서브카테고리가 있을 때만 표시 */}
+          {subcats.length > 0 && (
+            <div>
+              <label style={labelStyle}>서브카테고리 (선택)</label>
+              <select style={{ ...inputStyle, color: form.subcategory ? '#1a1a2e' : '#aaa' }} value={form.subcategory} onChange={set('subcategory')}>
+                <option value="">서브카테고리 선택</option>
+                {subcats.map(sub => (
+                  <option key={sub.id} value={sub.name}>{sub.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* 수정 모드에서만 상태 변경 */}
           {isEdit && (

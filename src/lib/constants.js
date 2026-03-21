@@ -1,13 +1,3 @@
-export const CATEGORIES = [
-  '업무',
-  'SNS',
-  '쇼핑',
-  '금융',
-  '개발',
-  '엔터테인먼트',
-  '기타',
-]
-
 export const SITE_STATUS = {
   ACTIVE:        'active',
   DORMANT:       'dormant',

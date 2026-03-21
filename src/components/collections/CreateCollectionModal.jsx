@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CATEGORIES } from '../../lib/constants'
+import { useCategories } from '../../hooks/useCategories'
 import { FaviconImg } from '../../utils/favicon'
 import { generateSlug } from '../../hooks/useCollections'
 
@@ -20,11 +20,6 @@ const inputStyle = {
 const labelStyle = {
   fontSize: 12, fontWeight: 600, color: '#555', marginBottom: 5, display: 'block',
 }
-
-const CAT_TABS = [
-  { label: '전체', cat: null },
-  ...CATEGORIES.map(c => ({ label: c === '엔터테인먼트' ? '엔터' : c, cat: c })),
-]
 
 // ─────────────────────────────────────────────
 // 성공 화면
@@ -100,6 +95,7 @@ function DoneView({ shareSlug, onClose }) {
 // ─────────────────────────────────────────────
 export default function CreateCollectionModal({ onClose, onSave, sites, initial = null }) {
   const isEdit = !!initial
+  const { categories } = useCategories()
 
   const [title, setTitle]           = useState(initial?.title ?? '')
   const [description, setDesc]      = useState(initial?.description ?? '')
@@ -315,17 +311,30 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
                 </button>
               </div>
 
-              {/* 카테고리 탭 */}
+              {/* 카테고리 탭 (동적) */}
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
-                {CAT_TABS.map(({ label, cat }) => {
-                  const on    = activeCat === cat
-                  const count = cat ? sites.filter(s => s.category === cat).length : sites.length
-                  if (count === 0 && cat !== null) return null
+                {/* 전체 */}
+                <button
+                  type="button"
+                  onClick={() => setActiveCat(null)}
+                  style={{
+                    padding: '4px 10px', borderRadius: 999, border: 'none', cursor: 'pointer',
+                    fontSize: 11, fontWeight: 600, transition: 'all 0.12s',
+                    background: !activeCat ? C.primary : '#f0eff8',
+                    color:      !activeCat ? '#fff' : '#666',
+                  }}
+                >
+                  전체
+                </button>
+                {categories.map(cat => {
+                  const on    = activeCat === cat.name
+                  const count = sites.filter(s => s.category === cat.name).length
+                  if (count === 0) return null
                   return (
                     <button
-                      key={label}
+                      key={cat.id}
                       type="button"
-                      onClick={() => setActiveCat(cat)}
+                      onClick={() => setActiveCat(cat.name)}
                       style={{
                         padding: '4px 10px', borderRadius: 999, border: 'none', cursor: 'pointer',
                         fontSize: 11, fontWeight: 600, transition: 'all 0.12s',
@@ -333,7 +342,7 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
                         color:      on ? '#fff' : '#666',
                       }}
                     >
-                      {label}
+                      {cat.emoji} {cat.name}
                     </button>
                   )
                 })}

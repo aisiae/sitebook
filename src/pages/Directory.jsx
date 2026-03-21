@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/common/Navbar'
 import { useDirectory } from '../hooks/useDirectory'
+import { useCategories } from '../hooks/useCategories'
 import { FaviconImg } from '../utils/favicon'
 
 const C = {
@@ -14,11 +15,6 @@ const C = {
   btnRadius:    '10px',
 }
 
-const TABS = ['전체', '💼 업무', '💻 개발', '🛍 쇼핑', '💳 금융', '🤖 AI']
-const TAB_CAT = {
-  '전체': null, '💼 업무': '업무', '💻 개발': '개발',
-  '🛍 쇼핑': '쇼핑', '💳 금융': '금융', '🤖 AI': 'AI',
-}
 
 // ─────────────────────────────────────────────
 // Site card
@@ -138,11 +134,11 @@ function SiteCard({ site }) {
 // Directory page
 // ─────────────────────────────────────────────
 export default function Directory() {
-  const { sites, loading }        = useDirectory()
-  const [activeTab, setActiveTab] = useState('전체')
+  const { sites, loading }    = useDirectory()
+  const { categories }        = useCategories()
+  const [activeCat, setActiveCat] = useState(null) // null = 전체
 
-  const cat      = TAB_CAT[activeTab] ?? null
-  const filtered = cat ? sites.filter(s => s.category === cat) : sites
+  const filtered = activeCat ? sites.filter(s => s.category === activeCat) : sites
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
@@ -161,17 +157,31 @@ export default function Directory() {
 
         {/* 탭 */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
-          {TABS.map(tab => {
-            const on = activeTab === tab
+          {/* 전체 탭 */}
+          <button
+            onClick={() => setActiveCat(null)}
+            style={{
+              padding: '8px 18px', borderRadius: 999, border: 'none',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+              background: !activeCat ? C.primary : '#fff',
+              color:      !activeCat ? '#fff'    : '#666',
+              boxShadow:  !activeCat ? 'none' : '0 1px 5px rgba(0,0,0,0.07)',
+            }}
+          >
+            전체
+          </button>
+          {/* 동적 카테고리 탭 */}
+          {categories.map(cat => {
+            const on = activeCat === cat.name
             return (
-              <button key={tab} onClick={() => setActiveTab(tab)} style={{
+              <button key={cat.id} onClick={() => setActiveCat(cat.name)} style={{
                 padding: '8px 18px', borderRadius: 999, border: 'none',
                 fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                 background: on ? C.primary : '#fff',
                 color:      on ? '#fff'    : '#666',
                 boxShadow:  on ? 'none' : '0 1px 5px rgba(0,0,0,0.07)',
               }}>
-                {tab}
+                {cat.emoji} {cat.name}
               </button>
             )
           })}
@@ -188,9 +198,9 @@ export default function Directory() {
           <div style={{ textAlign: 'center', padding: '60px 0', color: '#aaa' }}>
             <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
             <p style={{ fontSize: 15, fontWeight: 600, color: '#666', margin: '0 0 4px' }}>
-              {cat ? `'${cat}' 카테고리의 사이트가 없어요.` : '아직 등록된 사이트가 없어요.'}
+              {activeCat ? `'${activeCat}' 카테고리의 사이트가 없어요.` : '아직 등록된 사이트가 없어요.'}
             </p>
-            {!cat && <p style={{ fontSize: 13, margin: 0 }}>관리자가 사이트를 준비 중입니다.</p>}
+            {!activeCat && <p style={{ fontSize: 13, margin: 0 }}>관리자가 사이트를 준비 중입니다.</p>}
           </div>
         )}
       </main>

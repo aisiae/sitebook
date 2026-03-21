@@ -5,6 +5,7 @@ import AddSiteModal from '../common/AddSiteModal'
 import CreateCollectionModal from '../collections/CreateCollectionModal'
 import { FaviconImg } from '../../utils/favicon'
 import { useAuth } from '../../hooks/useAuth'
+import { useCategories } from '../../hooks/useCategories'
 import { STATUS_LABEL, STATUS_STYLE } from '../../lib/constants'
 
 const C = {
@@ -16,17 +17,6 @@ const C = {
   cardRadius:   '12px',
   btnRadius:    '10px',
 }
-
-const TABS = [
-  { label: '전체',          cat: null           },
-  { label: '💼 업무',       cat: '업무'          },
-  { label: '📱 SNS',       cat: 'SNS'           },
-  { label: '🛍 쇼핑',      cat: '쇼핑'          },
-  { label: '💳 금융',      cat: '금융'           },
-  { label: '💻 개발',      cat: '개발'           },
-  { label: '🎬 엔터',      cat: '엔터테인먼트'   },
-  { label: '기타',          cat: '기타'          },
-]
 
 const LAYOUT_OPTIONS = [
   { type: 'A', icon: '⊞', label: '카드' },
@@ -143,9 +133,11 @@ function SiteCard({ site, onOpen, onEdit, onDelete }) {
 export default function LayoutA({ sites, loading, addSite, updateSite, updateLastVisited, deleteSite, layoutType, setLayoutType, createCollection }) {
   const { user }    = useAuth()
   const navigate    = useNavigate()
-  const [activeTab, setActiveTab]   = useState('전체')
-  const [search, setSearch]         = useState('')
-  const [showAdd, setShowAdd]       = useState(false)
+  const { categories } = useCategories()
+  const [activeCat, setActiveCat]     = useState(null)   // null = 전체
+  const [activeSubcat, setActiveSubcat] = useState(null) // null = 전체
+  const [search, setSearch]           = useState('')
+  const [showAdd, setShowAdd]         = useState(false)
   const [editingSite, setEditingSite] = useState(null)
   const [showCreateCollection, setShowCreateCollection] = useState(false)
 
@@ -154,11 +146,18 @@ export default function LayoutA({ sites, loading, addSite, updateSite, updateLas
   const active  = sites.filter(s => (s.status ?? 'active') === 'active').length
   const dormant = sites.filter(s => s.status === 'dormant').length
 
+  // 선택된 카테고리의 서브카테고리
+  const activeCatObj = categories.find(c => c.name === activeCat)
+  const subcats = activeCatObj?.subcategories ?? []
+
+  // 카테고리 변경 시 서브카테고리 리셋
+  const handleCatChange = (catName) => { setActiveCat(catName); setActiveSubcat(null) }
+
   // 필터링
-  const cat      = TABS.find(t => t.label === activeTab)?.cat ?? null
   const q        = search.trim().toLowerCase()
   const filtered = sites
-    .filter(s => !cat || s.category === cat)
+    .filter(s => !activeCat    || s.category    === activeCat)
+    .filter(s => !activeSubcat || s.subcategory === activeSubcat)
     .filter(s => !q  || s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q))
 
   const handleOpen = async (site) => {
@@ -251,39 +250,91 @@ export default function LayoutA({ sites, loading, addSite, updateSite, updateLas
         </div>
 
         {/* ── 탭 + 검색 ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flex: 1 }}>
-            {TABS.map(({ label }) => {
-              const on = activeTab === label
-              return (
-                <button
-                  key={label}
-                  onClick={() => setActiveTab(label)}
-                  style={{
-                    padding: '6px 14px', borderRadius: 999, border: 'none',
-                    fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                    background: on ? C.primary : '#fff',
-                    color:      on ? '#fff'    : '#666',
-                    boxShadow:  on ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
-                  }}
-                >
-                  {label}
-                </button>
-              )
-            })}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+              {/* 전체 탭 */}
+              <button
+                onClick={() => handleCatChange(null)}
+                style={{
+                  padding: '6px 14px', borderRadius: 999, border: 'none',
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                  background: !activeCat ? C.primary : '#fff',
+                  color:      !activeCat ? '#fff'    : '#666',
+                  boxShadow:  !activeCat ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
+                }}
+              >
+                전체
+              </button>
+              {/* 동적 카테고리 탭 */}
+              {categories.map(cat => {
+                const on = activeCat === cat.name
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCatChange(cat.name)}
+                    style={{
+                      padding: '6px 14px', borderRadius: 999, border: 'none',
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                      background: on ? C.primary : '#fff',
+                      color:      on ? '#fff'    : '#666',
+                      boxShadow:  on ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
+                    }}
+                  >
+                    {cat.emoji} {cat.name}
+                  </button>
+                )
+              })}
+            </div>
+            {/* 검색창 */}
+            <input
+              type="text"
+              placeholder="사이트 검색..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                padding: '7px 12px', borderRadius: 8, fontSize: 13,
+                border: '1px solid #e0dff8', outline: 'none',
+                background: '#fff', width: 160, boxSizing: 'border-box',
+              }}
+            />
           </div>
-          {/* 검색창 */}
-          <input
-            type="text"
-            placeholder="사이트 검색..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{
-              padding: '7px 12px', borderRadius: 8, fontSize: 13,
-              border: '1px solid #e0dff8', outline: 'none',
-              background: '#fff', width: 160, boxSizing: 'border-box',
-            }}
-          />
+
+          {/* 서브카테고리 탭 (해당 카테고리에 서브카테고리가 있을 때) */}
+          {subcats.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8, paddingLeft: 2 }}>
+              <button
+                onClick={() => setActiveSubcat(null)}
+                style={{
+                  padding: '4px 12px', borderRadius: 999,
+                  border: `1px solid ${!activeSubcat ? C.primary : '#e0dff8'}`,
+                  fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                  background: !activeSubcat ? C.primaryLight : '#fff',
+                  color:      !activeSubcat ? C.primary       : '#888',
+                }}
+              >
+                전체
+              </button>
+              {subcats.map(sub => {
+                const on = activeSubcat === sub.name
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => setActiveSubcat(sub.name)}
+                    style={{
+                      padding: '4px 12px', borderRadius: 999,
+                      border: `1px solid ${on ? C.primary : '#e0dff8'}`,
+                      fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                      background: on ? C.primaryLight : '#fff',
+                      color:      on ? C.primary      : '#888',
+                    }}
+                  >
+                    {sub.name}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* ── 카드 그리드 ── */}
@@ -305,9 +356,9 @@ export default function LayoutA({ sites, loading, addSite, updateSite, updateLas
           <div style={{ background: '#fff', border: C.cardBorder, borderRadius: C.cardRadius, padding: '60px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>{search ? '🔍' : '📂'}</div>
             <p style={{ fontSize: 15, fontWeight: 600, color: '#555', margin: '0 0 6px' }}>
-              {search ? `'${search}' 검색 결과가 없어요.` : cat ? `'${cat}' 카테고리에 등록된 사이트가 없어요.` : '아직 등록된 사이트가 없어요.'}
+              {search ? `'${search}' 검색 결과가 없어요.` : activeCat ? `'${activeCat}' 카테고리에 등록된 사이트가 없어요.` : '아직 등록된 사이트가 없어요.'}
             </p>
-            {!search && !cat && (
+            {!search && !activeCat && (
               <>
                 <p style={{ fontSize: 13, color: '#aaa', margin: '0 0 20px' }}>사이트를 추가해서 시작해보세요.</p>
                 <button
