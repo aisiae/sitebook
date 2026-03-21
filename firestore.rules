@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 사용자 문서 (레이아웃 설정 등) ──────────────────────────
+    // 본인 문서만 읽기/쓰기 허용
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+
+    // ── 사용자 사이트 컬렉션 ──────────────────────────────────────
+    // 본인 데이터만 읽기/쓰기 허용
+    match /users/{userId}/sites/{siteId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+
+    // ── 관리자 컬렉션 ──────────────────────────────────────────────
+    // 본인 문서만 읽기 허용 (쓰기는 Firebase 콘솔/Admin SDK로만)
+    match /admins/{userId} {
+      allow read:  if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // ── 디렉토리 컬렉션 ────────────────────────────────────────────
+    // 읽기: 누구나 가능
+    // 쓰기: admins/{uid}.isAdmin == true 인 사용자만 가능
+    match /directory/{siteId} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+                   && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // ── 공유 컬렉션 ───────────────────────────────────────────────
+    // 읽기: 공개 컬렉션은 누구나 / 비공개는 본인만
+    // 생성: 로그인 + 본인 uid 일치
+    // 수정: 본인 전체 수정 OR 로그인 사용자의 카운터 필드(likeCount·saveCount) 변경
+    //       OR 비로그인 포함 viewCount 증가
+    // 삭제: 본인만
+    match /collections/{collectionId} {
+      allow read: if resource.data.isPublic == true
+                  || (request.auth != null && request.auth.uid == resource.data.uid);
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.uid;
+      allow update: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow update: if resource.data.isPublic == true
+                    && request.auth != null
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['likeCount', 'saveCount']);
+      allow update: if resource.data.isPublic == true
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['viewCount']);
+      allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
+    }
+
+    // ── 컬렉션 좋아요 ─────────────────────────────────────────────
+    // 읽기: 누구나 (좋아요 여부 확인용)
+    // 생성/삭제: 로그인 + 본인 uid 일치
+    match /collection_likes/{likeId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.uid;
+      allow delete: if request.auth != null
+                    && request.auth.uid == resource.data.uid;
+    }
+
+  }
+}

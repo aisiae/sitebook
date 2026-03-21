@@ -1,0 +1,21 @@
+@keyframes sitebook-float-anim {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+
+.sitebook-float {
+  animation: sitebook-float-anim 3.5s ease-in-out infinite;
+}
+.sitebook-float:nth-child(1) { animation-delay: 0s; }
+.sitebook-float:nth-child(2) { animation-delay: -0.7s; }
+.sitebook-float:nth-child(3) { animation-delay: -1.4s; }
+.sitebook-float:nth-child(4) { animation-delay: -2.1s; }
+.sitebook-float:nth-child(5) { animation-delay: -2.8s; }
+
+@media (max-width: 768px) {
+  .sitebook-hero-cards    { display: none !important; }
+  .sitebook-stats         { flex-direction: column !important; padding: 20px !important; }
+  .sitebook-stats-divider { display: none !important; }
+  .sitebook-hero-text h1  { font-size: 32px !important; }
+  .sitebook-features-grid { grid-template-columns: 1fr !important; }
+}
