@@ -17,7 +17,7 @@ export async function analyzeSite(url) {
   if (!apiKey) throw new Error('API_KEY_MISSING')
 
   const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
   const prompt = `다음 웹사이트 URL을 분석해서 아래 JSON 형식으로만 응답해줘.
 다른 말은 하지 말고 JSON만 반환해줘.
