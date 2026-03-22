@@ -111,7 +111,7 @@ function SiteCard({ site, onOpen, onEdit, onDelete }) {
             {site.name}
           </div>
           <span style={{ fontSize: 10, fontWeight: 600, background: C.primaryLight, color: C.primary, borderRadius: 999, padding: '2px 7px', display: 'inline-block', marginTop: 3 }}>
-            {site.category}
+            {Array.isArray(site.category) ? site.category.join(', ') : site.category}
           </span>
         </div>
       </div>
@@ -156,7 +156,7 @@ export default function LayoutA({ sites, loading, addSite, updateSite, updateLas
   // 필터링
   const q        = search.trim().toLowerCase()
   const filtered = sites
-    .filter(s => !activeCat    || s.category    === activeCat)
+    .filter(s => !activeCat    || (Array.isArray(s.category) ? s.category.includes(activeCat) : s.category === activeCat))
     .filter(s => !activeSubcat || s.subcategory === activeSubcat)
     .filter(s => !q  || s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q))
 

@@ -75,7 +75,7 @@ function SiteCard({ site }) {
             fontSize: 10, fontWeight: 600, borderRadius: 999, padding: '1px 7px',
             background: C.primaryLight, color: C.primary,
           }}>
-            {site.category}
+            {Array.isArray(site.category) ? site.category.join(', ') : site.category}
           </span>
         </div>
       </div>
@@ -138,7 +138,9 @@ export default function Directory() {
   const { categories }        = useCategories()
   const [activeCat, setActiveCat] = useState(null) // null = 전체
 
-  const filtered = activeCat ? sites.filter(s => s.category === activeCat) : sites
+  const filtered = activeCat
+    ? sites.filter(s => Array.isArray(s.category) ? s.category.includes(activeCat) : s.category === activeCat)
+    : sites
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>

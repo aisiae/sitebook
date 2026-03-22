@@ -36,7 +36,7 @@ function SectionHead({ children }) {
 // Site Form modal
 // ─────────────────────────────────────────────
 const EMPTY = {
-  name: '', url: '', icon: '', category: '', subcategory: '',
+  name: '', url: '', icon: '', category: [], subcategory: '',
   shortDesc: '', fullDesc: '', howToUse: '', promotionText: '', tags: '',
   screenshots: [], relatedSites: [],
   isAd: false, adType: 'none',
@@ -51,6 +51,7 @@ function initForm(initial) {
     shortDesc:     initial.shortDesc || initial.description || '',
     subcategory:   initial.subcategory || '',
     promotionText: initial.promotionText || '',
+    category:      Array.isArray(initial.category) ? initial.category : (initial.category ? [initial.category] : []),
     tags:          Array.isArray(initial.tags) ? initial.tags.join(', ') : (initial.tags ?? ''),
     screenshots:   Array.isArray(initial.screenshots)  ? [...initial.screenshots]  : [],
     relatedSites:  Array.isArray(initial.relatedSites) ? [...initial.relatedSites] : [],
@@ -105,8 +106,8 @@ function SiteFormModal({ title, initial, allSites, onClose, onSave }) {
       setForm(f => ({
         ...f,
         url,
-        name:          result.name          || f.name,
-        category:      matchedCat?.name     || f.category,
+        name:          result.name || f.name,
+        category:      matchedCat ? [matchedCat.name] : f.category,
         shortDesc:     result.shortDesc     || f.shortDesc,
         fullDesc:      result.fullDesc      || f.fullDesc,
         howToUse:      result.howToUse      || f.howToUse,
@@ -130,11 +131,20 @@ function SiteFormModal({ title, initial, allSites, onClose, onSave }) {
 
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }))
 
-  const handleCategoryChange = (e) => {
-    setForm(f => ({ ...f, category: e.target.value, subcategory: '' }))
+  const toggleCategory = (name) => {
+    setForm(f => ({
+      ...f,
+      category: f.category.includes(name)
+        ? f.category.filter(x => x !== name)
+        : [...f.category, name],
+      subcategory: '',
+    }))
   }
 
-  const selectedCatObj = categories.find(c => c.name === form.category)
+  // 카테고리 1개만 선택 시 서브카테고리 표시
+  const selectedCatObj = form.category.length === 1
+    ? categories.find(c => c.name === form.category[0])
+    : null
   const subcats = selectedCatObj?.subcategories ?? []
 
   // Screenshots
@@ -154,7 +164,7 @@ function SiteFormModal({ title, initial, allSites, onClose, onSave }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.name.trim() || !form.url.trim() || !form.category) {
+    if (!form.name.trim() || !form.url.trim() || !form.category.length) {
       setError('사이트명, URL, 카테고리는 필수입니다.')
       return
     }
@@ -268,28 +278,41 @@ function SiteFormModal({ title, initial, allSites, onClose, onSave }) {
                 onChange={e => { set('url')(e); setAiUrl(e.target.value) }}
               />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: subcats.length > 0 ? '1fr 1fr' : '1fr', gap: 12 }}>
+            <div>
+              <label style={lbl}>카테고리 * (복수 선택 가능)</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {categories.map(c => {
+                  const selected = form.category.includes(c.name)
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => toggleCategory(c.name)}
+                      style={{
+                        padding: '5px 12px', borderRadius: 999, cursor: 'pointer',
+                        border: selected ? `2px solid ${C.primary}` : '1px solid #e0dff8',
+                        background: selected ? C.primaryLight : '#fff',
+                        color: selected ? C.primary : '#666',
+                        fontSize: 13, fontWeight: selected ? 700 : 400,
+                      }}
+                    >
+                      {c.emoji} {c.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            {subcats.length > 0 && (
               <div>
-                <label style={lbl}>카테고리 *</label>
-                <select style={{ ...inp, color: form.category ? '#1a1a2e' : '#aaa' }} value={form.category} onChange={handleCategoryChange}>
-                  <option value="" disabled>카테고리 선택</option>
-                  {categories.map(c => (
-                    <option key={c.id} value={c.name}>{c.emoji} {c.name}</option>
+                <label style={lbl}>서브카테고리</label>
+                <select style={{ ...inp, color: form.subcategory ? '#1a1a2e' : '#aaa' }} value={form.subcategory} onChange={set('subcategory')}>
+                  <option value="">서브카테고리 선택 (선택)</option>
+                  {subcats.map(sub => (
+                    <option key={sub.id} value={sub.name}>{sub.name}</option>
                   ))}
                 </select>
               </div>
-              {subcats.length > 0 && (
-                <div>
-                  <label style={lbl}>서브카테고리</label>
-                  <select style={{ ...inp, color: form.subcategory ? '#1a1a2e' : '#aaa' }} value={form.subcategory} onChange={set('subcategory')}>
-                    <option value="">서브카테고리 선택 (선택)</option>
-                    {subcats.map(sub => (
-                      <option key={sub.id} value={sub.name}>{sub.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
+            )}
             <div>
               <label style={lbl}>한줄 소개 (카드에 표시)</label>
               <input style={inp} placeholder="서비스에 대한 한 줄 소개" value={form.shortDesc} onChange={set('shortDesc')} />
@@ -816,7 +839,8 @@ export default function Admin() {
                         </td>
                         <td style={td}>
                           <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 999, padding: '2px 9px', background: '#EEEDFE', color: C.primary, whiteSpace: 'nowrap' }}>
-                            {site.category}{site.subcategory ? ` / ${site.subcategory}` : ''}
+                            {Array.isArray(site.category) ? site.category.join(', ') : site.category}
+                            {site.subcategory ? ` / ${site.subcategory}` : ''}
                           </span>
                         </td>
                         <td style={{ ...td, maxWidth: 180, color: '#777' }}>

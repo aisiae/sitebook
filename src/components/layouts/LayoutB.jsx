@@ -106,7 +106,7 @@ function ListRow({ site, onOpen, onEdit, isDeleting, onDeleteStart, onDeleteCanc
       {/* 카테고리 */}
       <div style={{ width: 100, flexShrink: 0 }}>
         <span style={{ fontSize: 11, fontWeight: 600, background: C.primaryLight, color: C.primary, borderRadius: 999, padding: '2px 8px' }}>
-          {site.category}
+          {Array.isArray(site.category) ? site.category.join(', ') : site.category}
         </span>
       </div>
 
@@ -179,7 +179,7 @@ export default function LayoutB({ sites, loading, addSite, updateSite, updateLas
   // 필터
   const q        = search.trim().toLowerCase()
   const filtered = sites
-    .filter(s => !activeCat    || s.category    === activeCat)
+    .filter(s => !activeCat    || (Array.isArray(s.category) ? s.category.includes(activeCat) : s.category === activeCat))
     .filter(s => !activeSubcat || s.subcategory === activeSubcat)
     .filter(s => !q || s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q))
 
@@ -213,7 +213,7 @@ export default function LayoutB({ sites, loading, addSite, updateSite, updateLas
     await updateLastVisited(site.id)
   }
 
-  const catCount  = (cat) => cat ? sites.filter(s => s.category === cat).length : sites.length
+  const catCount  = (cat) => cat ? sites.filter(s => Array.isArray(s.category) ? s.category.includes(cat) : s.category === cat).length : sites.length
   const activeLabel = activeCat ? (categories.find(c => c.name === activeCat)?.name ?? activeCat) : '전체'
 
   return (
