@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useDirectory } from '../hooks/useDirectory'
+import { useCategories } from '../hooks/useCategories'
 import './LandingPage.css'
 
 // ─────────────────────────────────────────────
@@ -41,22 +43,6 @@ const FEATURES = [
   { icon: '🔍', title: '사이트 큐레이션', desc: '엄선된 유용한 사이트를 카테고리별로 발견해요' },
 ]
 
-const DIRECTORY_SITES = [
-  { icon: '📝', name: 'Notion',    category: '업무', desc: '올인원 노트·협업 툴',                      tag: '#생산성'   },
-  { icon: '🐱', name: 'GitHub',    category: '개발', desc: '소스코드 버전 관리와 오픈소스 협업 플랫폼', tag: '#개발자필수' },
-  { icon: '🎨', name: 'Figma',     category: '업무', desc: 'UI/UX 디자인 협업 툴',                    tag: '#디자인'   },
-  { icon: '🤖', name: 'ChatGPT',   category: 'AI',   desc: 'OpenAI 대화형 AI. 글쓰기·코딩·번역',       tag: '#AI도구'  },
-  { icon: '🛒', name: '쿠팡',      category: '쇼핑', desc: '로켓배송 온라인 쇼핑. 당일·새벽배송',       tag: '#생활필수' },
-  { icon: '💸', name: '토스',      category: '금융', desc: '간편 송금·결제·투자',                      tag: '#핀테크'   },
-  { icon: '💬', name: 'Slack',     category: '업무', desc: '팀 메신저. 채널·DM·파일 공유',              tag: '#협업'    },
-  { icon: '✨', name: 'Claude',    category: 'AI',   desc: 'Anthropic AI 어시스턴트',                  tag: '#AI도구'  },
-]
-
-const TABS = ['전체', '💼 업무', '💻 개발', '🛍 쇼핑', '💳 금융', '🤖 AI']
-const TAB_CATEGORY = {
-  '전체': null, '💼 업무': '업무', '💻 개발': '개발',
-  '🛍 쇼핑': '쇼핑', '💳 금융': '금융', '🤖 AI': 'AI',
-}
 
 // ─────────────────────────────────────────────
 // Sub-components
@@ -117,12 +103,14 @@ function StatItem({ emoji, num, label }) {
 // ─────────────────────────────────────────────
 export default function LandingPage() {
   const { signInWithGoogle } = useAuth()
-  const [activeTab, setActiveTab]     = useState('전체')
+  const { sites, loading: sitesLoading } = useDirectory()
+  const { categories } = useCategories()
+  const [activeTab, setActiveTab]     = useState(null)  // null = 전체
   const [hoveredCard, setHoveredCard] = useState(null)
 
-  const filteredSites = DIRECTORY_SITES.filter(s => {
-    const cat = TAB_CATEGORY[activeTab]
-    return cat === null || s.category === cat
+  const filteredSites = sites.filter(s => {
+    if (activeTab === null) return true
+    return Array.isArray(s.category) ? s.category.includes(activeTab) : s.category === activeTab
   })
 
   const scrollToDirectory = () =>
@@ -247,11 +235,11 @@ export default function LandingPage() {
             boxShadow: '0 2px 20px rgba(83,74,183,0.07)',
           }}
         >
-          <StatItem emoji="📌" num="0" label="내가 등록한 사이트" />
+          <StatItem emoji="🔍" num={sites.length} label="큐레이션 사이트" />
           <div className="sitebook-stats-divider" style={{ width: 1, height: 44, background: 'rgba(83,74,183,0.10)', margin: '0 20px' }} />
-          <StatItem emoji="🔍" num="0" label="큐레이션 사이트" />
+          <StatItem emoji="📂" num={categories.length} label="카테고리" />
           <div className="sitebook-stats-divider" style={{ width: 1, height: 44, background: 'rgba(83,74,183,0.10)', margin: '0 20px' }} />
-          <StatItem emoji="👥" num="0" label="활성 사용자" />
+          <StatItem emoji="🆓" num="0원" label="이용 요금" />
         </div>
       </section>
 
@@ -291,56 +279,79 @@ export default function LandingPage() {
 
           {/* Category tabs */}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
-            {TABS.map(tab => (
+            <button
+              onClick={() => setActiveTab(null)}
+              style={{
+                padding: '8px 18px', borderRadius: 999, border: 'none',
+                fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                background: activeTab === null ? C.primary : '#fff',
+                color:      activeTab === null ? '#fff'    : '#666',
+                boxShadow:  activeTab === null ? 'none' : '0 1px 5px rgba(0,0,0,0.07)',
+              }}
+            >
+              전체
+            </button>
+            {categories.map(cat => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={cat.id}
+                onClick={() => setActiveTab(cat.name)}
                 style={{
                   padding: '8px 18px', borderRadius: 999, border: 'none',
                   fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                  background: activeTab === tab ? C.primary : '#fff',
-                  color:      activeTab === tab ? '#fff'    : '#666',
-                  boxShadow:  activeTab === tab ? 'none' : '0 1px 5px rgba(0,0,0,0.07)',
+                  background: activeTab === cat.name ? C.primary : '#fff',
+                  color:      activeTab === cat.name ? '#fff'    : '#666',
+                  boxShadow:  activeTab === cat.name ? 'none' : '0 1px 5px rgba(0,0,0,0.07)',
                 }}
               >
-                {tab}
+                {cat.emoji} {cat.name}
               </button>
             ))}
           </div>
 
           {/* Site cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-            {filteredSites.map((site, i) => (
-              <div
-                key={site.name}
-                onMouseEnter={() => setHoveredCard(i)}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{
-                  background: '#fff', border: C.cardBorder, borderRadius: C.cardRadius,
-                  padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: 8,
-                  cursor: 'pointer', transition: 'all 0.18s',
-                  transform:  hoveredCard === i ? 'translateY(-2px)' : 'none',
-                  boxShadow:  hoveredCard === i ? '0 8px 24px rgba(83,74,183,0.14)' : '0 1px 6px rgba(0,0,0,0.04)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 28 }}>{site.icon}</span>
-                  <span style={{
-                    fontSize: 10, fontWeight: 600, borderRadius: 999, padding: '2px 8px',
-                    background: C.primaryLight, color: C.primary,
-                  }}>
-                    {site.category}
-                  </span>
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.dark }}>{site.name}</div>
-                <div style={{ fontSize: 12, color: '#888', lineHeight: 1.55, flex: 1 }}>{site.desc}</div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
-                  <span style={{ fontSize: 11, color: '#bbb' }}>{site.tag}</span>
-                  <span style={{ fontSize: 12, color: C.primary, fontWeight: 600 }}>바로가기 →</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          {sitesLoading ? (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: '#aaa', fontSize: 14 }}>불러오는 중...</div>
+          ) : filteredSites.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: '#aaa', fontSize: 14 }}>등록된 사이트가 없어요</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+              {filteredSites.map((site, i) => {
+                const catLabel = Array.isArray(site.category) ? site.category[0] : site.category
+                const tagLabel = site.tags?.[0] ? `#${site.tags[0]}` : ''
+                return (
+                  <div
+                    key={site.id}
+                    onMouseEnter={() => setHoveredCard(i)}
+                    onMouseLeave={() => setHoveredCard(null)}
+                    onClick={() => site.url && window.open(site.url, '_blank', 'noopener')}
+                    style={{
+                      background: '#fff', border: C.cardBorder, borderRadius: C.cardRadius,
+                      padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: 8,
+                      cursor: site.url ? 'pointer' : 'default', transition: 'all 0.18s',
+                      transform:  hoveredCard === i ? 'translateY(-2px)' : 'none',
+                      boxShadow:  hoveredCard === i ? '0 8px 24px rgba(83,74,183,0.14)' : '0 1px 6px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 28 }}>{site.icon || '🌐'}</span>
+                      <span style={{
+                        fontSize: 10, fontWeight: 600, borderRadius: 999, padding: '2px 8px',
+                        background: C.primaryLight, color: C.primary,
+                      }}>
+                        {catLabel}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: C.dark }}>{site.name}</div>
+                    <div style={{ fontSize: 12, color: '#888', lineHeight: 1.55, flex: 1 }}>{site.shortDesc}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                      <span style={{ fontSize: 11, color: '#bbb' }}>{tagLabel}</span>
+                      {site.url && <span style={{ fontSize: 12, color: C.primary, fontWeight: 600 }}>바로가기 →</span>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           <div style={{ textAlign: 'center', marginTop: 36 }}>
             <button style={{
