@@ -4,14 +4,7 @@ import Navbar from '../components/common/Navbar'
 import CollectionCard from '../components/collections/CollectionCard'
 import { useAuthContext } from '../store/authContext'
 import { fetchPublicCollections } from '../hooks/useCollections'
-
-const C = {
-  primary:      '#534AB7',
-  primaryLight: '#EEEDFE',
-  dark:         '#2d2a6e',
-  bg:           '#f5f4ff',
-  cardBorder:   '0.5px solid rgba(83,74,183,0.12)',
-}
+import { useTheme } from '../store/themeContext'
 
 const SORT_OPTIONS = [
   { key: 'newest',   label: '최신순'      },
@@ -33,6 +26,7 @@ function sortCollections(list, key) {
 export default function CollectionsExplore() {
   const navigate      = useNavigate()
   const { user }      = useAuthContext()
+  const C             = useTheme()
 
   const [collections, setCollections] = useState([])
   const [loading, setLoading]         = useState(true)
@@ -71,7 +65,7 @@ export default function CollectionsExplore() {
               <h1 style={{ fontSize: 28, fontWeight: 900, color: C.dark, margin: '0 0 6px', letterSpacing: '-0.5px' }}>
                 컬렉션 탐색
               </h1>
-              <p style={{ fontSize: 14, color: '#888', margin: 0 }}>
+              <p style={{ fontSize: 14, color: C.textMuted, margin: 0 }}>
                 사람들이 공유한 사이트 컬렉션을 발견해보세요.
               </p>
             </div>
@@ -93,7 +87,7 @@ export default function CollectionsExplore() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
           {/* 검색 */}
           <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 360 }}>
-            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#bbb' }}>🔍</span>
+            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: C.textMuted }}>🔍</span>
             <input
               type="text"
               placeholder="컬렉션 제목, 설명, 작성자 검색..."
@@ -102,14 +96,15 @@ export default function CollectionsExplore() {
               style={{
                 width: '100%', padding: '9px 12px 9px 34px',
                 borderRadius: 9, fontSize: 13,
-                border: '1px solid #e0dff8', outline: 'none',
-                background: '#fff', boxSizing: 'border-box',
+                border: C.inputBorder, outline: 'none',
+                background: C.inputBg, boxSizing: 'border-box',
+                color: C.textPrimary,
               }}
             />
           </div>
 
           {/* 정렬 탭 */}
-          <div style={{ display: 'flex', gap: 4, background: '#fff', border: C.cardBorder, borderRadius: 10, padding: '3px' }}>
+          <div style={{ display: 'flex', gap: 4, background: C.cardBg, border: C.cardBorder, borderRadius: 10, padding: '3px' }}>
             {SORT_OPTIONS.map(({ key, label }) => {
               const on = sort === key
               return (
@@ -119,7 +114,7 @@ export default function CollectionsExplore() {
                   style={{
                     padding: '6px 14px', borderRadius: 7, border: 'none',
                     background: on ? C.primary : 'transparent',
-                    color:      on ? '#fff'    : '#888',
+                    color:      on ? '#fff'    : C.textMuted,
                     fontSize: 12, fontWeight: on ? 700 : 500,
                     cursor: 'pointer', transition: 'all 0.15s',
                   }}
@@ -131,7 +126,7 @@ export default function CollectionsExplore() {
           </div>
 
           {!loading && (
-            <span style={{ fontSize: 12, color: '#bbb', marginLeft: 'auto' }}>
+            <span style={{ fontSize: 12, color: C.textMuted, marginLeft: 'auto' }}>
               {filtered.length}개
             </span>
           )}
@@ -141,7 +136,7 @@ export default function CollectionsExplore() {
         {loading ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 18 }}>
             {Array(6).fill(0).map((_, i) => (
-              <div key={i} style={{ background: '#fff', borderRadius: 16, height: 220, border: C.cardBorder, opacity: 0.5 + i * 0.05 }} />
+              <div key={i} style={{ background: C.cardBg, borderRadius: 16, height: 220, border: C.cardBorder, opacity: 0.5 + i * 0.05 }} />
             ))}
           </div>
         ) : filtered.length > 0 ? (
@@ -153,10 +148,10 @@ export default function CollectionsExplore() {
         ) : (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <div style={{ fontSize: 52, marginBottom: 14 }}>{search ? '🔍' : '📭'}</div>
-            <p style={{ fontSize: 16, fontWeight: 700, color: '#555', margin: '0 0 8px' }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: C.textSub, margin: '0 0 8px' }}>
               {search ? `'${search}' 검색 결과가 없어요.` : '아직 공개 컬렉션이 없어요.'}
             </p>
-            <p style={{ fontSize: 13, color: '#aaa', margin: '0 0 24px' }}>
+            <p style={{ fontSize: 13, color: C.textMuted, margin: '0 0 24px' }}>
               첫 번째 컬렉션을 만들어보세요!
             </p>
             <button

@@ -4,15 +4,7 @@ import Navbar from '../components/common/Navbar'
 import CreateCollectionModal from '../components/collections/CreateCollectionModal'
 import { useCollections } from '../hooks/useCollections'
 import { useSites } from '../hooks/useSites'
-
-const C = {
-  primary:      '#534AB7',
-  primaryLight: '#EEEDFE',
-  dark:         '#2d2a6e',
-  bg:           '#f5f4ff',
-  cardBorder:   '0.5px solid rgba(83,74,183,0.12)',
-  cardRadius:   '14px',
-}
+import { useTheme } from '../store/themeContext'
 
 function relativeDate(ts) {
   if (!ts) return '-'
@@ -29,6 +21,7 @@ function relativeDate(ts) {
 // 컬렉션 행 카드
 // ─────────────────────────────────────────────
 function CollectionRow({ col, onEdit, onDelete, onTogglePublic }) {
+  const C = useTheme()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [copied, setCopied]               = useState(false)
   const [toggling, setToggling]           = useState(false)
@@ -49,13 +42,13 @@ function CollectionRow({ col, onEdit, onDelete, onTogglePublic }) {
 
   return (
     <div style={{
-      background: '#fff',
+      background: C.cardBg,
       border: C.cardBorder,
       borderRadius: C.cardRadius,
       padding: '20px 24px',
       transition: 'box-shadow 0.15s',
     }}
-      onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 20px rgba(83,74,183,0.08)'}
+      onMouseEnter={e => e.currentTarget.style.boxShadow = C.isDark ? '0 4px 20px rgba(0,0,0,0.4)' : '0 4px 20px rgba(83,74,183,0.08)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
@@ -67,8 +60,8 @@ function CollectionRow({ col, onEdit, onDelete, onTogglePublic }) {
           style={{
             flexShrink: 0, marginTop: 2,
             padding: '4px 10px', borderRadius: 999, border: 'none',
-            background: col.isPublic ? '#EAF3DE' : '#f0f0f0',
-            color:      col.isPublic ? '#3B6D11' : '#888',
+            background: col.isPublic ? (C.isDark ? '#1a3a0a' : '#EAF3DE') : (C.isDark ? '#2a2748' : '#f0f0f0'),
+            color:      col.isPublic ? (C.isDark ? '#6dbf40' : '#3B6D11') : C.textMuted,
             fontSize: 11, fontWeight: 700, cursor: 'pointer',
             transition: 'all 0.15s', opacity: toggling ? 0.6 : 1,
           }}
@@ -82,7 +75,7 @@ function CollectionRow({ col, onEdit, onDelete, onTogglePublic }) {
             {col.title}
           </div>
           {col.description && (
-            <div style={{ fontSize: 13, color: '#888', marginBottom: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {col.description}
             </div>
           )}
@@ -98,10 +91,10 @@ function CollectionRow({ col, onEdit, onDelete, onTogglePublic }) {
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span style={{ fontSize: 12 }}>{icon}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{val}</span>
-                <span style={{ fontSize: 11, color: '#bbb' }}>{label}</span>
+                <span style={{ fontSize: 11, color: C.textMuted }}>{label}</span>
               </div>
             ))}
-            <span style={{ fontSize: 11, color: '#ccc' }}>· {relativeDate(col.createdAt)} 생성</span>
+            <span style={{ fontSize: 11, color: C.textMuted }}>· {relativeDate(col.createdAt)} 생성</span>
           </div>
         </div>
 
@@ -116,7 +109,7 @@ function CollectionRow({ col, onEdit, onDelete, onTogglePublic }) {
               >삭제</button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid #e0dff8', background: '#fff', color: '#888', fontSize: 12, cursor: 'pointer' }}
+                style={{ padding: '6px 12px', borderRadius: 7, border: C.inputBorder, background: C.cardBg, color: C.textMuted, fontSize: 12, cursor: 'pointer' }}
               >취소</button>
             </>
           ) : (
@@ -125,8 +118,9 @@ function CollectionRow({ col, onEdit, onDelete, onTogglePublic }) {
                 onClick={handleCopy}
                 style={{
                   padding: '7px 13px', borderRadius: 8,
-                  border: '1px solid #e0dff8', background: copied ? C.primaryLight : '#fff',
-                  color: copied ? C.primary : '#888',
+                  border: C.inputBorder,
+                  background: copied ? C.primaryLight : C.cardBg,
+                  color: copied ? C.primary : C.textMuted,
                   fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                 }}
               >
@@ -134,17 +128,17 @@ function CollectionRow({ col, onEdit, onDelete, onTogglePublic }) {
               </button>
               <button
                 onClick={() => onEdit(col)}
-                style={{ padding: '7px 13px', borderRadius: 8, border: '1px solid #e0dff8', background: '#fff', color: C.primary, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                style={{ padding: '7px 13px', borderRadius: 8, border: C.inputBorder, background: C.cardBg, color: C.primary, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = C.primary}
-                onMouseLeave={e => e.currentTarget.style.borderColor = '#e0dff8'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = C.subBorder}
               >
                 ✎ 수정
               </button>
               <button
                 onClick={() => setConfirmDelete(true)}
-                style={{ padding: '7px 13px', borderRadius: 8, border: '1px solid #ffe0e0', background: '#fff', color: '#e53935', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#fff5f5' }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+                style={{ padding: '7px 13px', borderRadius: 8, border: '1px solid rgba(229,57,53,0.3)', background: C.cardBg, color: '#e53935', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.background = C.isDark ? 'rgba(229,57,53,0.15)' : '#fff5f5' }}
+                onMouseLeave={e => { e.currentTarget.style.background = C.cardBg }}
               >
                 ✕ 삭제
               </button>
@@ -160,6 +154,7 @@ function CollectionRow({ col, onEdit, onDelete, onTogglePublic }) {
 // MyCollections 페이지
 // ─────────────────────────────────────────────
 export default function MyCollections() {
+  const C = useTheme()
   const navigate = useNavigate()
   const { collections, loading, createCollection, updateCollection, deleteCollection } = useCollections()
   const { sites } = useSites()
@@ -186,14 +181,14 @@ export default function MyCollections() {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.primary, letterSpacing: 2, marginBottom: 8 }}>MY COLLECTIONS</div>
             <h1 style={{ fontSize: 26, fontWeight: 900, color: C.dark, margin: '0 0 6px', letterSpacing: '-0.4px' }}>내 컬렉션</h1>
-            <p style={{ fontSize: 13, color: '#888', margin: 0 }}>
+            <p style={{ fontSize: 13, color: C.textMuted, margin: 0 }}>
               {loading ? '불러오는 중...' : `${collections.length}개의 컬렉션을 관리하세요.`}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button
               onClick={() => navigate('/collections')}
-              style={{ padding: '10px 18px', borderRadius: 10, border: '1px solid #e0dff8', background: '#fff', color: '#666', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              style={{ padding: '10px 18px', borderRadius: 10, border: C.inputBorder, background: C.cardBg, color: C.textSub, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
             >
               탐색하기
             </button>
@@ -210,14 +205,14 @@ export default function MyCollections() {
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[1, 2, 3].map(i => (
-              <div key={i} style={{ height: 100, borderRadius: C.cardRadius, background: '#fff', border: C.cardBorder, opacity: 0.5 }} />
+              <div key={i} style={{ height: 100, borderRadius: C.cardRadius, background: C.cardBg, border: C.cardBorder, opacity: 0.5 }} />
             ))}
           </div>
         ) : collections.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 24px', background: '#fff', borderRadius: 20, border: C.cardBorder }}>
+          <div style={{ textAlign: 'center', padding: '80px 24px', background: C.cardBg, borderRadius: 20, border: C.cardBorder }}>
             <div style={{ fontSize: 52, marginBottom: 16 }}>📭</div>
             <h3 style={{ fontSize: 18, fontWeight: 800, color: C.dark, margin: '0 0 8px' }}>아직 컬렉션이 없어요</h3>
-            <p style={{ fontSize: 13, color: '#aaa', margin: '0 0 24px' }}>
+            <p style={{ fontSize: 13, color: C.textMuted, margin: '0 0 24px' }}>
               즐겨 쓰는 사이트들을 모아 첫 컬렉션을 만들어보세요!
             </p>
             <button

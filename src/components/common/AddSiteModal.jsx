@@ -1,21 +1,22 @@
 import { useState } from 'react'
 import { useCategories } from '../../hooks/useCategories'
 import { STATUS_LABEL } from '../../lib/constants'
-
-const C = { primary: '#534AB7', dark: '#2d2a6e', btnRadius: '10px' }
-
-const inputStyle = {
-  width: '100%', padding: '10px 12px', fontSize: 14,
-  border: '1px solid #e0dff8', borderRadius: 8, outline: 'none',
-  fontFamily: 'inherit', boxSizing: 'border-box',
-}
-const labelStyle = {
-  fontSize: 13, fontWeight: 600, color: '#444', marginBottom: 6, display: 'block',
-}
+import { useTheme } from '../../store/themeContext'
 
 export default function AddSiteModal({ onClose, onSave, initial = null }) {
   const isEdit = !!initial
   const { categories } = useCategories()
+  const C = useTheme()
+
+  const inputStyle = {
+    width: '100%', padding: '10px 12px', fontSize: 14,
+    border: C.inputBorder, borderRadius: 8, outline: 'none',
+    fontFamily: 'inherit', boxSizing: 'border-box',
+    background: C.inputBg, color: C.textPrimary,
+  }
+  const labelStyle = {
+    fontSize: 13, fontWeight: 600, color: C.textSub, marginBottom: 6, display: 'block',
+  }
 
   const [form, setForm] = useState({
     name:        initial?.name        ?? '',
@@ -60,16 +61,17 @@ export default function AddSiteModal({ onClose, onSave, initial = null }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div style={{
-        background: '#fff', borderRadius: 16, padding: '32px 28px',
+        background: C.cardBg, borderRadius: 16, padding: '32px 28px',
         width: '100%', maxWidth: 460,
-        boxShadow: '0 20px 60px rgba(83,74,183,0.18)',
+        boxShadow: C.isDark ? '0 20px 60px rgba(0,0,0,0.6)' : '0 20px 60px rgba(83,74,183,0.18)',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        border: C.cardBorder,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <h3 style={{ fontSize: 18, fontWeight: 800, color: C.dark, margin: 0 }}>
             {isEdit ? '사이트 수정' : '사이트 추가'}
           </h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#aaa', lineHeight: 1 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted, lineHeight: 1 }}>✕</button>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -83,7 +85,7 @@ export default function AddSiteModal({ onClose, onSave, initial = null }) {
           </div>
           <div>
             <label style={labelStyle}>카테고리 *</label>
-            <select style={{ ...inputStyle, color: form.category ? '#1a1a2e' : '#aaa' }} value={form.category} onChange={handleCategoryChange}>
+            <select style={{ ...inputStyle, color: form.category ? C.textPrimary : C.textMuted }} value={form.category} onChange={handleCategoryChange}>
               <option value="" disabled>카테고리 선택</option>
               {categories.map(c => (
                 <option key={c.id} value={c.name}>{c.emoji} {c.name}</option>
@@ -95,7 +97,7 @@ export default function AddSiteModal({ onClose, onSave, initial = null }) {
           {subcats.length > 0 && (
             <div>
               <label style={labelStyle}>서브카테고리 (선택)</label>
-              <select style={{ ...inputStyle, color: form.subcategory ? '#1a1a2e' : '#aaa' }} value={form.subcategory} onChange={set('subcategory')}>
+              <select style={{ ...inputStyle, color: form.subcategory ? C.textPrimary : C.textMuted }} value={form.subcategory} onChange={set('subcategory')}>
                 <option value="">서브카테고리 선택</option>
                 {subcats.map(sub => (
                   <option key={sub.id} value={sub.name}>{sub.name}</option>
@@ -116,9 +118,9 @@ export default function AddSiteModal({ onClose, onSave, initial = null }) {
                     onClick={() => setForm(f => ({ ...f, status: s }))}
                     style={{
                       flex: 1, padding: '9px', borderRadius: 8,
-                      border: `1px solid ${form.status === s ? C.primary : '#e0dff8'}`,
-                      background: form.status === s ? C.primary : '#fff',
-                      color: form.status === s ? '#fff' : '#666',
+                      border: `1px solid ${form.status === s ? C.primary : C.subBorder}`,
+                      background: form.status === s ? C.primary : C.cardBg,
+                      color: form.status === s ? '#fff' : C.textSub,
                       fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                     }}
                   >
@@ -143,7 +145,7 @@ export default function AddSiteModal({ onClose, onSave, initial = null }) {
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
             <button
               type="button" onClick={onClose}
-              style={{ flex: 1, padding: '11px', borderRadius: C.btnRadius, border: '1px solid #e0dff8', background: '#fff', color: '#666', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+              style={{ flex: 1, padding: '11px', borderRadius: C.btnRadius, border: C.inputBorder, background: C.cardBg, color: C.textSub, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
             >
               취소
             </button>

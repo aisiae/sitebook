@@ -2,25 +2,9 @@ import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useDirectory } from '../hooks/useDirectory'
 import { useCategories } from '../hooks/useCategories'
+import { useTheme, useThemeControl } from '../store/themeContext'
 import './LandingPage.css'
 
-// ─────────────────────────────────────────────
-// Design tokens
-// ─────────────────────────────────────────────
-const C = {
-  primary:      '#534AB7',
-  primaryLight: '#EEEDFE',
-  bg:           '#f5f4ff',
-  dark:         '#2d2a6e',
-  footer:       '#1e1c4a',
-  cardBorder:   '0.5px solid rgba(83,74,183,0.12)',
-  cardRadius:   '14px',
-  btnRadius:    '10px',
-}
-
-// ─────────────────────────────────────────────
-// Static data
-// ─────────────────────────────────────────────
 const FLOATING_CARDS = [
   { icon: '🛒', name: '쿠팡',       category: '쇼핑', lastVisit: '3일 전', status: 'active'  },
   { icon: '🐱', name: 'GitHub',     category: '개발', lastVisit: '오늘',   status: 'active'  },
@@ -43,10 +27,6 @@ const FEATURES = [
   { icon: '🔍', title: '사이트 큐레이션', desc: '엄선된 유용한 사이트를 카테고리별로 발견해요' },
 ]
 
-
-// ─────────────────────────────────────────────
-// Sub-components
-// ─────────────────────────────────────────────
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -59,22 +39,23 @@ function GoogleIcon() {
 }
 
 function FloatingCard({ card }) {
+  const C      = useTheme()
   const active = card.status === 'active'
   return (
     <div style={{
-      background: '#fff',
-      border: '0.5px solid rgba(83,74,183,0.15)',
+      background: C.cardBg,
+      border: C.cardBorder,
       borderRadius: 12,
       padding: '12px 16px',
       minWidth: 170,
-      boxShadow: '0 6px 24px rgba(83,74,183,0.12)',
+      boxShadow: C.isDark ? '0 6px 24px rgba(0,0,0,0.4)' : '0 6px 24px rgba(83,74,183,0.12)',
       userSelect: 'none',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
         <span style={{ fontSize: 22 }}>{card.icon}</span>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a2e' }}>{card.name}</div>
-          <div style={{ fontSize: 11, color: '#aaa' }}>{card.category} · {card.lastVisit}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary }}>{card.name}</div>
+          <div style={{ fontSize: 11, color: C.textMuted }}>{card.category} · {card.lastVisit}</div>
         </div>
       </div>
       <span style={{
@@ -89,24 +70,24 @@ function FloatingCard({ card }) {
 }
 
 function StatItem({ emoji, num, label }) {
+  const C = useTheme()
   return (
     <div style={{ flex: 1, textAlign: 'center' }}>
       <div style={{ fontSize: 20, marginBottom: 6 }}>{emoji}</div>
       <div style={{ fontSize: 24, fontWeight: 800, color: C.primary, lineHeight: 1 }}>{num}</div>
-      <div style={{ fontSize: 11, color: '#999', marginTop: 5 }}>{label}</div>
+      <div style={{ fontSize: 11, color: C.textMuted, marginTop: 5 }}>{label}</div>
     </div>
   )
 }
 
-// ─────────────────────────────────────────────
-// Main page
-// ─────────────────────────────────────────────
 export default function LandingPage() {
-  const { signInWithGoogle } = useAuth()
-  const { sites, loading: sitesLoading } = useDirectory()
-  const { categories } = useCategories()
-  const [activeTab, setActiveTab]     = useState(null)  // null = 전체
-  const [hoveredCard, setHoveredCard] = useState(null)
+  const { signInWithGoogle }                = useAuth()
+  const { sites, loading: sitesLoading }    = useDirectory()
+  const { categories }                      = useCategories()
+  const C                                   = useTheme()
+  const { isDark, toggleTheme }             = useThemeControl()
+  const [activeTab, setActiveTab]           = useState(null)
+  const [hoveredCard, setHoveredCard]       = useState(null)
 
   const filteredSites = sites.filter(s => {
     if (activeTab === null) return true
@@ -117,47 +98,57 @@ export default function LandingPage() {
     document.getElementById('directory')?.scrollIntoView({ behavior: 'smooth' })
 
   return (
-    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', color: '#1a1a2e' }}>
+    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', color: C.textPrimary, background: C.bg, minHeight: '100vh' }}>
 
       {/* ── 1. NAVBAR ─────────────────────────────── */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 1000,
-        background: 'rgba(255,255,255,0.82)',
+        background: C.navBg,
         backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '0.5px solid rgba(83,74,183,0.10)',
+        borderBottom: C.navBorder,
         padding: '0 24px',
       }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60 }}>
-          {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.primary, display: 'inline-block' }} />
             <span style={{ fontSize: 18, fontWeight: 800, color: C.dark, letterSpacing: '-0.5px' }}>SiteBook</span>
           </div>
-          {/* Center menu */}
           <div style={{ display: 'flex', gap: 32 }}>
             {['내 사이트', '사이트 디렉토리'].map(m => (
-              <a key={m} href="#" style={{ fontSize: 14, color: '#555', textDecoration: 'none', fontWeight: 500 }}>{m}</a>
+              <a key={m} href="#" style={{ fontSize: 14, color: C.textSub, textDecoration: 'none', fontWeight: 500 }}>{m}</a>
             ))}
           </div>
-          {/* Login */}
-          <button
-            onClick={signInWithGoogle}
-            style={{ background: C.primary, color: '#fff', border: 'none', borderRadius: C.btnRadius, padding: '8px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-          >
-            로그인
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* 다크모드 토글 */}
+            <button
+              onClick={toggleTheme}
+              title={isDark ? '라이트 모드' : '다크 모드'}
+              style={{
+                width: 36, height: 36, borderRadius: '50%', border: 'none',
+                background: isDark ? 'rgba(123,116,224,0.15)' : 'rgba(83,74,183,0.08)',
+                color: C.primary, fontSize: 16, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {isDark ? '☀' : '🌙'}
+            </button>
+            <button
+              onClick={signInWithGoogle}
+              style={{ background: C.primary, color: '#fff', border: 'none', borderRadius: C.btnRadius, padding: '8px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            >
+              로그인
+            </button>
+          </div>
         </div>
       </nav>
 
       {/* ── 2. HERO ───────────────────────────────── */}
       <section style={{ background: C.bg, position: 'relative', overflow: 'hidden', minHeight: 640, display: 'flex', alignItems: 'center', padding: '80px 24px' }}>
-        {/* Deco blobs */}
-        <div style={{ position: 'absolute', top: -130, left: -130, width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle, rgba(83,74,183,0.13) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -150, right: -110, width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(83,74,183,0.10) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: -130, left: -130, width: 420, height: 420, borderRadius: '50%', background: `radial-gradient(circle, ${isDark ? 'rgba(123,116,224,0.12)' : 'rgba(83,74,183,0.13)'} 0%, transparent 70%)`, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -150, right: -110, width: 500, height: 500, borderRadius: '50%', background: `radial-gradient(circle, ${isDark ? 'rgba(123,116,224,0.08)' : 'rgba(83,74,183,0.10)'} 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
         <div style={{ maxWidth: 1100, margin: '0 auto', width: '100%', display: 'flex', alignItems: 'center', gap: 60, position: 'relative', zIndex: 1 }}>
 
-          {/* Left: copy */}
           <div className="sitebook-hero-text" style={{ flex: '1 1 460px' }}>
             <span style={{
               display: 'inline-block', background: C.primaryLight, color: C.primary,
@@ -173,7 +164,7 @@ export default function LandingPage() {
               관리.
             </h1>
 
-            <p style={{ fontSize: 16, color: '#666', lineHeight: 1.75, margin: '0 0 36px', maxWidth: 440 }}>
+            <p style={{ fontSize: 16, color: C.textSub, lineHeight: 1.75, margin: '0 0 36px', maxWidth: 440 }}>
               가입한 모든 웹사이트를 카테고리별로 정리하고 마지막 접속일과 상태를 한눈에 파악하세요.
             </p>
 
@@ -194,7 +185,7 @@ export default function LandingPage() {
                 onClick={scrollToDirectory}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  background: '#fff', color: C.primary,
+                  background: C.cardBg, color: C.primary,
                   border: `1.5px solid ${C.primary}`,
                   borderRadius: C.btnRadius, padding: '14px 26px',
                   fontSize: 15, fontWeight: 600, cursor: 'pointer',
@@ -205,7 +196,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Right: floating cards */}
           <div className="sitebook-hero-cards" style={{ flex: '0 0 420px', position: 'relative', height: 500 }}>
             {FLOATING_CARDS.map((card, i) => {
               const pos = CARD_POSITIONS[i]
@@ -225,30 +215,31 @@ export default function LandingPage() {
       </section>
 
       {/* ── 3. STATS BAR ─────────────────────────── */}
-      <section style={{ background: '#fff', padding: '32px 24px', display: 'flex', justifyContent: 'center' }}>
+      <section style={{ background: C.cardBg, padding: '32px 24px', display: 'flex', justifyContent: 'center' }}>
         <div
           className="sitebook-stats"
           style={{
             border: C.cardBorder, borderRadius: C.cardRadius,
             maxWidth: 520, width: '100%', padding: '24px 32px',
             display: 'flex', alignItems: 'center',
-            boxShadow: '0 2px 20px rgba(83,74,183,0.07)',
+            boxShadow: isDark ? '0 2px 20px rgba(0,0,0,0.3)' : '0 2px 20px rgba(83,74,183,0.07)',
+            background: C.cardBg,
           }}
         >
           <StatItem emoji="🔍" num={sites.length} label="큐레이션 사이트" />
-          <div className="sitebook-stats-divider" style={{ width: 1, height: 44, background: 'rgba(83,74,183,0.10)', margin: '0 20px' }} />
+          <div className="sitebook-stats-divider" style={{ width: 1, height: 44, background: isDark ? 'rgba(123,116,224,0.15)' : 'rgba(83,74,183,0.10)', margin: '0 20px' }} />
           <StatItem emoji="📂" num={categories.length} label="카테고리" />
-          <div className="sitebook-stats-divider" style={{ width: 1, height: 44, background: 'rgba(83,74,183,0.10)', margin: '0 20px' }} />
+          <div className="sitebook-stats-divider" style={{ width: 1, height: 44, background: isDark ? 'rgba(123,116,224,0.15)' : 'rgba(83,74,183,0.10)', margin: '0 20px' }} />
           <StatItem emoji="🆓" num="0원" label="이용 요금" />
         </div>
       </section>
 
       {/* ── 4. FEATURES ──────────────────────────── */}
-      <section style={{ background: '#fff', padding: '80px 24px' }}>
+      <section style={{ background: C.cardBg, padding: '80px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.primary, letterSpacing: 2, marginBottom: 12 }}>FEATURES</div>
           <h2 style={{ fontSize: 32, fontWeight: 800, color: C.dark, margin: '0 0 8px', letterSpacing: '-0.5px' }}>이런 기능을 제공해요</h2>
-          <p style={{ fontSize: 15, color: '#888', marginBottom: 48 }}>복잡한 즐겨찾기는 이제 그만</p>
+          <p style={{ fontSize: 15, color: C.textMuted, marginBottom: 48 }}>복잡한 즐겨찾기는 이제 그만</p>
 
           <div
             className="sitebook-features-grid"
@@ -256,12 +247,12 @@ export default function LandingPage() {
           >
             {FEATURES.map(f => (
               <div key={f.title} style={{
-                background: '#f8f7ff', border: C.cardBorder,
+                background: C.bg, border: C.cardBorder,
                 borderRadius: C.cardRadius, padding: '32px 28px', textAlign: 'left',
               }}>
                 <div style={{ fontSize: 34, marginBottom: 18 }}>{f.icon}</div>
                 <div style={{ fontSize: 17, fontWeight: 700, color: C.dark, marginBottom: 8 }}>{f.title}</div>
-                <div style={{ fontSize: 14, color: '#777', lineHeight: 1.65 }}>{f.desc}</div>
+                <div style={{ fontSize: 14, color: C.textSub, lineHeight: 1.65 }}>{f.desc}</div>
               </div>
             ))}
           </div>
@@ -274,7 +265,7 @@ export default function LandingPage() {
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: C.primary, letterSpacing: 2, marginBottom: 12 }}>DIRECTORY</div>
             <h2 style={{ fontSize: 32, fontWeight: 800, color: C.dark, margin: '0 0 8px', letterSpacing: '-0.5px' }}>오늘 발견할 유용한 사이트</h2>
-            <p style={{ fontSize: 15, color: '#888' }}>로그인 없이도 누구나 탐색할 수 있어요</p>
+            <p style={{ fontSize: 15, color: C.textMuted }}>로그인 없이도 누구나 탐색할 수 있어요</p>
           </div>
 
           {/* Category tabs */}
@@ -284,8 +275,8 @@ export default function LandingPage() {
               style={{
                 padding: '8px 18px', borderRadius: 999, border: 'none',
                 fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                background: activeTab === null ? C.primary : '#fff',
-                color:      activeTab === null ? '#fff'    : '#666',
+                background: activeTab === null ? C.primary : C.cardBg,
+                color:      activeTab === null ? '#fff'    : C.textSub,
                 boxShadow:  activeTab === null ? 'none' : '0 1px 5px rgba(0,0,0,0.07)',
               }}
             >
@@ -298,8 +289,8 @@ export default function LandingPage() {
                 style={{
                   padding: '8px 18px', borderRadius: 999, border: 'none',
                   fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                  background: activeTab === cat.name ? C.primary : '#fff',
-                  color:      activeTab === cat.name ? '#fff'    : '#666',
+                  background: activeTab === cat.name ? C.primary : C.cardBg,
+                  color:      activeTab === cat.name ? '#fff'    : C.textSub,
                   boxShadow:  activeTab === cat.name ? 'none' : '0 1px 5px rgba(0,0,0,0.07)',
                 }}
               >
@@ -310,9 +301,9 @@ export default function LandingPage() {
 
           {/* Site cards */}
           {sitesLoading ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#aaa', fontSize: 14 }}>불러오는 중...</div>
+            <div style={{ textAlign: 'center', padding: '40px 0', color: C.textMuted, fontSize: 14 }}>불러오는 중...</div>
           ) : filteredSites.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#aaa', fontSize: 14 }}>등록된 사이트가 없어요</div>
+            <div style={{ textAlign: 'center', padding: '40px 0', color: C.textMuted, fontSize: 14 }}>등록된 사이트가 없어요</div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
               {filteredSites.map((site, i) => {
@@ -325,11 +316,13 @@ export default function LandingPage() {
                     onMouseLeave={() => setHoveredCard(null)}
                     onClick={() => site.url && window.open(site.url, '_blank', 'noopener')}
                     style={{
-                      background: '#fff', border: C.cardBorder, borderRadius: C.cardRadius,
+                      background: C.cardBg, border: C.cardBorder, borderRadius: C.cardRadius,
                       padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: 8,
                       cursor: site.url ? 'pointer' : 'default', transition: 'all 0.18s',
                       transform:  hoveredCard === i ? 'translateY(-2px)' : 'none',
-                      boxShadow:  hoveredCard === i ? '0 8px 24px rgba(83,74,183,0.14)' : '0 1px 6px rgba(0,0,0,0.04)',
+                      boxShadow:  hoveredCard === i
+                        ? (isDark ? '0 8px 24px rgba(0,0,0,0.4)' : '0 8px 24px rgba(83,74,183,0.14)')
+                        : '0 1px 6px rgba(0,0,0,0.04)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -342,9 +335,9 @@ export default function LandingPage() {
                       </span>
                     </div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: C.dark }}>{site.name}</div>
-                    <div style={{ fontSize: 12, color: '#888', lineHeight: 1.55, flex: 1 }}>{site.shortDesc}</div>
+                    <div style={{ fontSize: 12, color: C.textSub, lineHeight: 1.55, flex: 1 }}>{site.shortDesc}</div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
-                      <span style={{ fontSize: 11, color: '#bbb' }}>{tagLabel}</span>
+                      <span style={{ fontSize: 11, color: C.textMuted }}>{tagLabel}</span>
                       {site.url && <span style={{ fontSize: 12, color: C.primary, fontWeight: 600 }}>바로가기 →</span>}
                     </div>
                   </div>
@@ -355,7 +348,7 @@ export default function LandingPage() {
 
           <div style={{ textAlign: 'center', marginTop: 36 }}>
             <button style={{
-              background: '#fff', color: C.primary, border: `1.5px solid ${C.primary}`,
+              background: C.cardBg, color: C.primary, border: `1.5px solid ${C.primary}`,
               borderRadius: C.btnRadius, padding: '12px 28px',
               fontSize: 14, fontWeight: 600, cursor: 'pointer',
             }}>
@@ -366,7 +359,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── 6. CTA ───────────────────────────────── */}
-      <section style={{ background: C.dark, padding: '80px 24px', textAlign: 'center' }}>
+      <section style={{ background: C.footerCta, padding: '80px 24px', textAlign: 'center' }}>
         <h2 style={{ fontSize: 28, fontWeight: 800, color: '#fff', margin: '0 0 12px', letterSpacing: '-0.5px' }}>
           지금 바로 정리 시작해요
         </h2>
@@ -387,7 +380,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── 7. FOOTER ────────────────────────────── */}
-      <footer style={{ background: C.footer, padding: '22px 24px', textAlign: 'center' }}>
+      <footer style={{ background: C.footerBg, padding: '22px 24px', textAlign: 'center' }}>
         <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', margin: 0 }}>
           © 2025 SiteBook · 이용약관 · 개인정보처리방침
         </p>
