@@ -1,4 +1,5 @@
 import { useLayoutType } from '../hooks/useLayoutType'
+import { useTheme } from '../store/themeContext'
 import { useSites } from '../hooks/useSites'
 import { useCollections } from '../hooks/useCollections'
 import LayoutA from '../components/layouts/LayoutA'
@@ -6,9 +7,10 @@ import LayoutB from '../components/layouts/LayoutB'
 import LayoutC from '../components/layouts/LayoutC'
 
 function LoadingScreen() {
+  const C = useTheme()
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f5f4ff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
-      <div style={{ fontSize: 14, color: '#aaa' }}>불러오는 중...</div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: C.bg, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+      <div style={{ fontSize: 14, color: C.textMuted }}>불러오는 중...</div>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
+import { useTheme } from './store/themeContext'
 import LandingPage        from './pages/LandingPage'
 import Dashboard          from './pages/Dashboard'
 import Directory          from './pages/Directory'
@@ -11,9 +12,10 @@ import CollectionsExplore from './pages/CollectionsExplore'
 import MyCollections      from './pages/MyCollections'
 
 function LoadingScreen() {
+  const C = useTheme()
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f5f4ff' }}>
-      <div style={{ fontSize: 14, color: '#aaa' }}>로딩 중...</div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: C.bg }}>
+      <div style={{ fontSize: 14, color: C.textMuted }}>로딩 중...</div>
     </div>
   )
 }

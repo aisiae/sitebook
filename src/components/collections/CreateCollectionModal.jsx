@@ -3,28 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useCategories } from '../../hooks/useCategories'
 import { FaviconImg } from '../../utils/favicon'
 import { generateSlug } from '../../hooks/useCollections'
+import { useTheme } from '../../store/themeContext'
 
-const C = {
-  primary:      '#534AB7',
-  primaryLight: '#EEEDFE',
-  dark:         '#2d2a6e',
-  border:       '1px solid #e0dff8',
-  radius:       '10px',
-}
-
-const inputStyle = {
-  width: '100%', padding: '9px 12px', fontSize: 13,
-  border: C.border, borderRadius: 8, outline: 'none',
-  fontFamily: 'inherit', boxSizing: 'border-box', color: '#1a1a2e',
-}
-const labelStyle = {
-  fontSize: 12, fontWeight: 600, color: '#555', marginBottom: 5, display: 'block',
-}
-
-// ─────────────────────────────────────────────
-// 성공 화면
-// ─────────────────────────────────────────────
 function DoneView({ shareSlug, onClose }) {
+  const C        = useTheme()
   const navigate  = useNavigate()
   const shareUrl  = `${window.location.origin}/c/${shareSlug}`
   const [copied, setCopied] = useState(false)
@@ -40,12 +22,11 @@ function DoneView({ shareSlug, onClose }) {
       <div style={{ fontSize: 40 }}>🎉</div>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 18, fontWeight: 800, color: C.dark, marginBottom: 6 }}>컬렉션이 만들어졌어요!</div>
-        <div style={{ fontSize: 13, color: '#888' }}>공유 링크로 누구든 볼 수 있어요.</div>
+        <div style={{ fontSize: 13, color: C.textMuted }}>공유 링크로 누구든 볼 수 있어요.</div>
       </div>
 
-      {/* 공유 링크 */}
-      <div style={{ width: '100%', background: '#f8f7ff', borderRadius: 10, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ flex: 1, fontSize: 12, color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ width: '100%', background: C.rowHoverBg, borderRadius: 10, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ flex: 1, fontSize: 12, color: C.textSub, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {shareUrl}
         </span>
         <button
@@ -60,14 +41,13 @@ function DoneView({ shareSlug, onClose }) {
         </button>
       </div>
 
-      {/* 트위터 공유 */}
       <button
         onClick={() => {
           const text = encodeURIComponent(`내 사이트 컬렉션을 공유합니다 🔗`)
           const url  = encodeURIComponent(shareUrl)
           window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'noopener')
         }}
-        style={{ width: '100%', padding: '10px', borderRadius: C.radius, border: C.border, background: '#fff', color: '#1DA1F2', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+        style={{ width: '100%', padding: '10px', borderRadius: C.btnRadius, border: C.inputBorder, background: C.cardBg, color: '#1DA1F2', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
       >
         𝕏 트위터에 공유
       </button>
@@ -75,13 +55,13 @@ function DoneView({ shareSlug, onClose }) {
       <div style={{ display: 'flex', gap: 10, width: '100%' }}>
         <button
           onClick={onClose}
-          style={{ flex: 1, padding: '10px', borderRadius: C.radius, border: C.border, background: '#fff', color: '#666', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+          style={{ flex: 1, padding: '10px', borderRadius: C.btnRadius, border: C.inputBorder, background: C.cardBg, color: C.textSub, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
         >
           닫기
         </button>
         <button
           onClick={() => { onClose(); navigate(`/c/${shareSlug}`) }}
-          style={{ flex: 2, padding: '10px', borderRadius: C.radius, border: 'none', background: C.primary, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+          style={{ flex: 2, padding: '10px', borderRadius: C.btnRadius, border: 'none', background: C.primary, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
         >
           공유 페이지 보기 →
         </button>
@@ -90,12 +70,20 @@ function DoneView({ shareSlug, onClose }) {
   )
 }
 
-// ─────────────────────────────────────────────
-// 메인 모달
-// ─────────────────────────────────────────────
 export default function CreateCollectionModal({ onClose, onSave, sites, initial = null }) {
   const isEdit = !!initial
+  const C      = useTheme()
   const { categories } = useCategories()
+
+  const inputStyle = {
+    width: '100%', padding: '9px 12px', fontSize: 13,
+    border: C.inputBorder, borderRadius: 8, outline: 'none',
+    fontFamily: 'inherit', boxSizing: 'border-box',
+    background: C.inputBg, color: C.textPrimary,
+  }
+  const labelStyle = {
+    fontSize: 12, fontWeight: 600, color: C.textSub, marginBottom: 5, display: 'block',
+  }
 
   const [title, setTitle]           = useState(initial?.title ?? '')
   const [description, setDesc]      = useState(initial?.description ?? '')
@@ -106,9 +94,8 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
   const [activeCat, setActiveCat]   = useState(null)
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
-  const [savedSlug, setSavedSlug]   = useState(null)  // 완료 후 보여줄 slug
+  const [savedSlug, setSavedSlug]   = useState(null)
 
-  // 제목 → 슬러그 자동 생성
   useEffect(() => {
     if (!slugLocked) {
       const base = title.trim().replace(/\s+/g, '-').replace(/[^\w가-힣-]/g, '').slice(0, 40)
@@ -180,14 +167,13 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
     }
   }
 
-  // ── 완료 화면 ──
   if (savedSlug) {
     return (
       <div
         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
         onClick={e => e.target === e.currentTarget && onClose()}
       >
-        <div style={{ background: '#fff', borderRadius: 16, padding: '36px 28px', width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(83,74,183,0.2)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+        <div style={{ background: C.cardBg, borderRadius: 16, padding: '36px 28px', width: '100%', maxWidth: 440, boxShadow: C.isDark ? '0 20px 60px rgba(0,0,0,0.6)' : '0 20px 60px rgba(83,74,183,0.2)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', border: C.cardBorder }}>
           <DoneView shareSlug={savedSlug} onClose={onClose} />
         </div>
       </div>
@@ -200,26 +186,26 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div style={{
-        background: '#fff', borderRadius: 16,
+        background: C.cardBg, borderRadius: 16,
         width: '100%', maxWidth: 560,
         maxHeight: '90vh', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(83,74,183,0.18)',
+        boxShadow: C.isDark ? '0 20px 60px rgba(0,0,0,0.6)' : '0 20px 60px rgba(83,74,183,0.18)',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        border: C.cardBorder,
       }}>
 
         {/* ── 헤더 ── */}
-        <div style={{ padding: '24px 28px 20px', borderBottom: C.border, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ padding: '24px 28px 20px', borderBottom: C.inputBorder, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <h3 style={{ fontSize: 18, fontWeight: 800, color: C.dark, margin: 0 }}>
             {isEdit ? '컬렉션 수정' : '컬렉션 만들기'}
           </h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#aaa', lineHeight: 1 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: C.textMuted, lineHeight: 1 }}>✕</button>
         </div>
 
         {/* ── 본문 (스크롤) ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-            {/* 제목 */}
             <div>
               <label style={labelStyle}>컬렉션 제목 *</label>
               <div style={{ position: 'relative' }}>
@@ -230,13 +216,12 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
                   onChange={e => setTitle(e.target.value.slice(0, 40))}
                   maxLength={40}
                 />
-                <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#ccc' }}>
+                <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: C.textMuted }}>
                   {title.length}/40
                 </span>
               </div>
             </div>
 
-            {/* 설명 */}
             <div>
               <label style={labelStyle}>한 줄 설명 (선택)</label>
               <div style={{ position: 'relative' }}>
@@ -247,29 +232,26 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
                   onChange={e => setDesc(e.target.value.slice(0, 80))}
                   maxLength={80}
                 />
-                <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#ccc' }}>
+                <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: C.textMuted }}>
                   {description.length}/80
                 </span>
               </div>
             </div>
 
-            {/* 슬러그 + 공개 여부 (2열) */}
             <div style={{ display: 'flex', gap: 12 }}>
-              {/* 슬러그 */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <label style={labelStyle}>슬러그 (URL)</label>
                 <input
-                  style={{ ...inputStyle, fontSize: 12, color: slug ? C.primary : '#aaa' }}
+                  style={{ ...inputStyle, fontSize: 12, color: slug ? C.primary : C.textMuted }}
                   value={slug}
                   placeholder="my-collection"
                   onChange={e => { setSlug(e.target.value); setSlugLocked(true) }}
                 />
-                <div style={{ fontSize: 10, color: '#bbb', marginTop: 3 }}>
-                  /c/<span style={{ color: slug ? C.primary : '#bbb' }}>{slug || 'my-collection'}</span>
+                <div style={{ fontSize: 10, color: C.textMuted, marginTop: 3 }}>
+                  /c/<span style={{ color: slug ? C.primary : C.textMuted }}>{slug || 'my-collection'}</span>
                 </div>
               </div>
 
-              {/* 공개 여부 */}
               <div style={{ flexShrink: 0 }}>
                 <label style={labelStyle}>공개 여부</label>
                 <div style={{ display: 'flex', gap: 6 }}>
@@ -280,9 +262,9 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
                       onClick={() => setIsPublic(val)}
                       style={{
                         padding: '7px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                        border: `1px solid ${isPublic === val ? C.primary : '#e0dff8'}`,
-                        background: isPublic === val ? C.primary : '#fff',
-                        color:      isPublic === val ? '#fff' : '#888',
+                        border: `1px solid ${isPublic === val ? C.primary : C.subBorder}`,
+                        background: isPublic === val ? C.primary : C.cardBg,
+                        color:      isPublic === val ? '#fff' : C.textSub,
                         transition: 'all 0.15s',
                       }}
                     >
@@ -293,7 +275,6 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
               </div>
             </div>
 
-            {/* 사이트 선택 */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <label style={{ ...labelStyle, margin: 0 }}>
@@ -311,17 +292,15 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
                 </button>
               </div>
 
-              {/* 카테고리 탭 (동적) */}
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
-                {/* 전체 */}
                 <button
                   type="button"
                   onClick={() => setActiveCat(null)}
                   style={{
                     padding: '4px 10px', borderRadius: 999, border: 'none', cursor: 'pointer',
                     fontSize: 11, fontWeight: 600, transition: 'all 0.12s',
-                    background: !activeCat ? C.primary : '#f0eff8',
-                    color:      !activeCat ? '#fff' : '#666',
+                    background: !activeCat ? C.primary : C.rowHoverBg,
+                    color:      !activeCat ? '#fff' : C.textSub,
                   }}
                 >
                   전체
@@ -338,8 +317,8 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
                       style={{
                         padding: '4px 10px', borderRadius: 999, border: 'none', cursor: 'pointer',
                         fontSize: 11, fontWeight: 600, transition: 'all 0.12s',
-                        background: on ? C.primary : '#f0eff8',
-                        color:      on ? '#fff' : '#666',
+                        background: on ? C.primary : C.rowHoverBg,
+                        color:      on ? '#fff' : C.textSub,
                       }}
                     >
                       {cat.emoji} {cat.name}
@@ -348,17 +327,16 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
                 })}
               </div>
 
-              {/* 사이트 체크박스 목록 */}
               {sites.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '24px 0', color: '#bbb', fontSize: 13 }}>
+                <div style={{ textAlign: 'center', padding: '24px 0', color: C.textMuted, fontSize: 13 }}>
                   등록된 사이트가 없어요.
                 </div>
               ) : filteredSites.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '16px 0', color: '#bbb', fontSize: 13 }}>
+                <div style={{ textAlign: 'center', padding: '16px 0', color: C.textMuted, fontSize: 13 }}>
                   해당 카테고리에 사이트가 없어요.
                 </div>
               ) : (
-                <div style={{ border: C.border, borderRadius: 10, overflow: 'hidden', maxHeight: 220, overflowY: 'auto' }}>
+                <div style={{ border: C.inputBorder, borderRadius: 10, overflow: 'hidden', maxHeight: 220, overflowY: 'auto' }}>
                   {filteredSites.map((site, i) => {
                     const checked = selectedIds.has(site.id)
                     return (
@@ -367,8 +345,8 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
                         style={{
                           display: 'flex', alignItems: 'center', gap: 10,
                           padding: '9px 14px', cursor: 'pointer',
-                          background: checked ? '#faf9ff' : '#fff',
-                          borderBottom: i < filteredSites.length - 1 ? '0.5px solid #f0eff8' : 'none',
+                          background: checked ? C.primaryLight : C.cardBg,
+                          borderBottom: i < filteredSites.length - 1 ? `0.5px solid ${C.divider}` : 'none',
                           transition: 'background 0.1s',
                         }}
                       >
@@ -380,13 +358,13 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
                         />
                         <FaviconImg
                           url={site.url}
-                          style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'contain', background: '#f5f4ff', flexShrink: 0 }}
+                          style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'contain', background: C.bg, flexShrink: 0 }}
                           fallback={<div style={{ width: 20, height: 20, borderRadius: 4, background: C.primaryLight, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>🌐</div>}
                         />
                         <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: C.dark, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {site.name}
                         </span>
-                        <span style={{ fontSize: 10, color: '#aaa', flexShrink: 0 }}>
+                        <span style={{ fontSize: 10, color: C.textMuted, flexShrink: 0 }}>
                           {site.category}
                         </span>
                       </label>
@@ -401,18 +379,18 @@ export default function CreateCollectionModal({ onClose, onSave, sites, initial 
         </div>
 
         {/* ── 푸터 ── */}
-        <div style={{ padding: '16px 28px 20px', borderTop: C.border, display: 'flex', gap: 10, flexShrink: 0 }}>
+        <div style={{ padding: '16px 28px 20px', borderTop: C.inputBorder, display: 'flex', gap: 10, flexShrink: 0 }}>
           <button
             type="button"
             onClick={onClose}
-            style={{ flex: 1, padding: '11px', borderRadius: C.radius, border: C.border, background: '#fff', color: '#666', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            style={{ flex: 1, padding: '11px', borderRadius: C.btnRadius, border: C.inputBorder, background: C.cardBg, color: C.textSub, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
           >
             취소
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            style={{ flex: 2, padding: '11px', borderRadius: C.radius, border: 'none', background: C.primary, color: '#fff', fontSize: 14, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}
+            style={{ flex: 2, padding: '11px', borderRadius: C.btnRadius, border: 'none', background: C.primary, color: '#fff', fontSize: 14, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}
           >
             {saving ? '저장 중...' : (isEdit ? '수정하기' : '컬렉션 만들기')}
           </button>
