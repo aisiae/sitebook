@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
           })
           // Only increment counter for genuinely new users (no prior sites)
           if (truly_new) {
-            updateDoc(doc(db, 'stats', 'global'), { totalUsers: increment(1) }).catch(() => {})
+            setDoc(doc(db, 'stats', 'global'), { totalUsers: increment(1) }, { merge: true }).catch(() => {})
           }
           setIsNewUser(truly_new)
         } else {
