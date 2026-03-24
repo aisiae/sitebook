@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useDirectory } from '../hooks/useDirectory'
 import { useCategories } from '../hooks/useCategories'
 import { useTheme, useThemeControl } from '../store/themeContext'
+import { useGlobalStats } from '../hooks/useGlobalStats'
 import './LandingPage.css'
 
 const FLOATING_CARDS = [
@@ -88,6 +89,7 @@ export default function LandingPage() {
   const { isDark, toggleTheme }             = useThemeControl()
   const [activeTab, setActiveTab]           = useState(null)
   const [hoveredCard, setHoveredCard]       = useState(null)
+  const { totalSites, totalUsers }           = useGlobalStats()
 
   const filteredSites = sites.filter(s => {
     if (activeTab === null) return true
@@ -194,6 +196,15 @@ export default function LandingPage() {
                 ▶ 둘러보기
               </button>
             </div>
+
+            {totalUsers !== null && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 16 }}>
+                <span style={{ fontSize: 13 }}>👥</span>
+                <span style={{ fontSize: 13, color: C.textMuted }}>
+                  이미 <span style={{ fontWeight: 700, color: C.primary }}>{totalUsers.toLocaleString()}명</span>이 사용 중
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="sitebook-hero-cards" style={{ flex: '0 0 420px', position: 'relative', height: 500 }}>
@@ -230,7 +241,7 @@ export default function LandingPage() {
           <div className="sitebook-stats-divider" style={{ width: 1, height: 44, background: isDark ? 'rgba(123,116,224,0.15)' : 'rgba(83,74,183,0.10)', margin: '0 20px' }} />
           <StatItem emoji="📂" num={categories.length} label="카테고리" />
           <div className="sitebook-stats-divider" style={{ width: 1, height: 44, background: isDark ? 'rgba(123,116,224,0.15)' : 'rgba(83,74,183,0.10)', margin: '0 20px' }} />
-          <StatItem emoji="🆓" num="0원" label="이용 요금" />
+          <StatItem emoji="👥" num={totalUsers !== null ? totalUsers.toLocaleString() : "무료"} label="누적 사용자" />
         </div>
       </section>
 
