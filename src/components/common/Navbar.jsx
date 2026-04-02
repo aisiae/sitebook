@@ -74,7 +74,7 @@ export default function Navbar() {
         </Link>
 
         {/* 중앙 메뉴 */}
-        <nav style={{ display: 'flex', gap: 4 }}>
+        <nav style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           {navLinks.map(({ label, to, admin }) => {
             const active = pathname === to
             return (
@@ -99,6 +99,18 @@ export default function Navbar() {
               </Link>
             )
           })}
+          <Link
+            to="/download"
+            style={{
+              fontSize: 12, fontWeight: 700, textDecoration: 'none',
+              color: C.primary, background: C.primaryLight,
+              borderRadius: 999, padding: '4px 12px',
+              marginLeft: 4,
+              border: `1px solid rgba(83,74,183,0.2)`,
+            }}
+          >
+            ⬇ 런처
+          </Link>
         </nav>
 
         {/* 오른쪽: 다크모드 토글 + 유저 영역 */}
@@ -212,6 +224,17 @@ export default function Navbar() {
                     >
                       <span style={{ fontSize: 14 }}>⚙</span>
                       레이아웃 설정
+                    </Link>
+
+                    <Link
+                      to="/download"
+                      onClick={() => setDropdownOpen(false)}
+                      style={{ ...itemBase, color: C.primary, fontWeight: 600 }}
+                      onMouseEnter={e => e.currentTarget.style.background = C.rowHoverBg}
+                      onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                    >
+                      <span style={{ fontSize: 14 }}>⬇</span>
+                      런처 다운로드
                     </Link>
 
                     <div style={{ height: '0.5px', background: isDark ? '#2a2748' : '#f0f0f0', margin: '4px 12px' }} />
