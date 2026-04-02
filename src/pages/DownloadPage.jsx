@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useTheme } from '../store/themeContext'
 
 // TODO: 빌드된 인스톨러 파일을 GitHub Releases 또는 Firebase Storage에 업로드 후 URL 교체
-const DOWNLOAD_URL = 'https://github.com/aisiae/sitebook-launcher/releases/latest/download/SiteBook-Launcher-Setup.exe'
+const DOWNLOAD_URL = 'https://github.com/aisiae/sitebook/releases/download/v1.0.0/SiteBook.Launcher.Setup.1.0.0.exe'
 const VERSION      = '1.0.0'
 
 const FEATURES = [
