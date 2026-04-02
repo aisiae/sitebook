@@ -10,6 +10,9 @@ import LayoutSelector     from './components/layouts/LayoutSelector'
 import CollectionShare    from './pages/CollectionShare'
 import CollectionsExplore from './pages/CollectionsExplore'
 import MyCollections      from './pages/MyCollections'
+import PrivacyPage        from './pages/PrivacyPage'
+import TermsPage          from './pages/TermsPage'
+import DownloadPage       from './pages/DownloadPage'
 
 function LoadingScreen() {
   const C = useTheme()
@@ -57,6 +60,10 @@ export default function App() {
       <Route path="/my/collections" element={<PrivateRoute><MyCollections /></PrivateRoute>} />
       {/* 관리자 패널: 관리자만 접근 가능 */}
       <Route path="/admin"     element={<AdminRoute><Admin /></AdminRoute>} />
+      {/* 법률 페이지 & 다운로드: 누구나 접근 가능 */}
+      <Route path="/privacy"   element={<PrivacyPage />} />
+      <Route path="/terms"     element={<TermsPage />} />
+      <Route path="/download"  element={<DownloadPage />} />
     </Routes>
   )
 }

@@ -8,19 +8,19 @@ import { STATUS_STYLE } from '../../lib/constants'
 import { useTheme } from '../../store/themeContext'
 import { useUserCategories } from '../../hooks/useUserCategories'
 
+const DORMANT_KEY = '__dormant__'
+
 const LAYOUT_OPTIONS = [
   { type: 'C', icon: '⊡', label: '폴더' },
-  { type: 'A', icon: '⊞', label: '카드' },
   { type: 'B', icon: '≡', label: '리스트' },
+  { type: 'A', icon: '⊞', label: '카드' },
 ]
-
-const DOT_COLOR = { active: '#4CAF50', dormant: '#FFC107' }
 
 function relativeDate(ts) {
   if (!ts) return '-'
   const date = ts.toDate ? ts.toDate() : new Date(ts)
   const days = Math.floor((Date.now() - date.getTime()) / 86400000)
-  if (days === 0) return '오늘'
+  if (days <= 0) return '오늘'
   if (days === 1) return '어제'
   if (days < 7)  return `${days}일 전`
   if (days < 30) return `${Math.floor(days / 7)}주 전`
@@ -41,8 +41,6 @@ function MiniCard({ site, onOpen, onEdit, onDelete }) {
   const C                           = useTheme()
   const [hov, setHov]               = useState(false)
   const [confirmDelete, setConfirm] = useState(false)
-  const status                      = effectiveStatus(site)
-  const dotColor                    = DOT_COLOR[status] ?? DOT_COLOR.active
 
   const stopProp = (fn) => (e) => { e.stopPropagation(); fn() }
 
@@ -98,14 +96,13 @@ function MiniCard({ site, onOpen, onEdit, onDelete }) {
         }
       />
       <div style={{ width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: C.dark, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.dark, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {site.name}
         </div>
-        <div style={{ fontSize: 9, color: C.textMuted, marginTop: 2 }}>
+        <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2 }}>
           {relativeDate(site.lastVisitedAt)}
         </div>
       </div>
-      <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
     </div>
   )
 }
@@ -231,9 +228,15 @@ export default function LayoutC({ sites, loading, addSite, updateSite, updateLas
     setAddingCat(false); setAddValue('')
   }
 
-  const q             = search.trim().toLowerCase()
-  const filteredSites = sites
-    .filter(s => !activeCat || (Array.isArray(s.category) ? s.category.includes(activeCat) : s.category === activeCat))
+  const q              = search.trim().toLowerCase()
+  const isDormantMode  = activeCat === DORMANT_KEY
+  const dormantSites   = useMemo(() => sites.filter(s => effectiveStatus(s) === 'dormant'), [sites])
+  const filteredSites  = sites
+    .filter(s => {
+      if (isDormantMode) return effectiveStatus(s) === 'dormant'
+      if (!activeCat) return true
+      return Array.isArray(s.category) ? s.category.includes(activeCat) : s.category === activeCat
+    })
     .filter(s => !q || s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q))
 
   // If useUserCategories hasn't loaded yet, derive categories directly from sites
@@ -248,18 +251,20 @@ export default function LayoutC({ sites, loading, addSite, updateSite, updateLas
   }, [categories, sites])
 
   // Build dynamic sections from Firestore categories
-  const allSectionDefs = activeCat
+  const allSectionDefs = activeCat && !isDormantMode
     ? effectiveCategories.filter(c => c.name === activeCat)
     : effectiveCategories
 
-  const sections = allSectionDefs
-    .map(cat => ({
-      label: cat.name,
-      emoji: cat.emoji,
-      cat:   cat.name,
-      sites: filteredSites.filter(s => Array.isArray(s.category) ? s.category.includes(cat.name) : s.category === cat.name),
-    }))
-    .filter(s => s.sites.length > 0)
+  const sections = isDormantMode
+    ? (filteredSites.length > 0 ? [{ label: '휴면 사이트', emoji: '💤', cat: DORMANT_KEY, sites: filteredSites }] : [])
+    : allSectionDefs
+        .map(cat => ({
+          label: cat.name,
+          emoji: cat.emoji,
+          cat:   cat.name,
+          sites: filteredSites.filter(s => Array.isArray(s.category) ? s.category.includes(cat.name) : s.category === cat.name),
+        }))
+        .filter(s => s.sites.length > 0)
 
   const handleOpen = async (site) => {
     const url = site.url.startsWith('http') ? site.url : `https://${site.url}`
@@ -278,7 +283,7 @@ export default function LayoutC({ sites, loading, addSite, updateSite, updateLas
   const allCollapsed = sections.length > 0 && sections.every(s => collapsed.has(s.label))
   const toggleAll    = () => setCollapsed(allCollapsed ? new Set() : new Set(sections.map(s => s.label)))
 
-  const activeLabel = activeCat ? effectiveCategories.find(c => c.name === activeCat)?.name ?? activeCat : '전체'
+  const activeLabel = isDormantMode ? '💤 휴면 사이트' : activeCat ? effectiveCategories.find(c => c.name === activeCat)?.name ?? activeCat : '전체'
   const totalShown  = filteredSites.length
 
   return (
@@ -318,6 +323,25 @@ export default function LayoutC({ sites, loading, addSite, updateSite, updateLas
               <span style={{ flex: 1, fontSize: 13, fontWeight: !activeCat ? 700 : 500, color: !activeCat ? C.primary : C.textSub }}>전체</span>
               <span style={{ fontSize: 11, fontWeight: 600, color: !activeCat ? C.primary : C.textMuted }}>{sites.length}</span>
             </div>
+
+            {/* 휴면 사이트 */}
+            {(
+              <div
+                onClick={() => { setActiveCat(DORMANT_KEY); setCollapsed(new Set()) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  padding: '8px 10px', borderRadius: 8, cursor: 'pointer', marginBottom: 1,
+                  background: isDormantMode ? 'rgba(255,193,7,0.12)' : 'transparent', transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => { if (!isDormantMode) e.currentTarget.style.background = C.rowHoverBg }}
+                onMouseLeave={e => { if (!isDormantMode) e.currentTarget.style.background = 'transparent' }}
+              >
+                <span style={{ fontSize: 14, lineHeight: 1 }}>💤</span>
+                <span style={{ flex: 1, fontSize: 13, fontWeight: isDormantMode ? 700 : 500, color: isDormantMode ? '#FFC107' : C.textSub }}>휴면 사이트</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: isDormantMode ? '#FFC107' : C.textMuted }}>{dormantSites.length}</span>
+              </div>
+            )}
+
             {/* 동적 카테고리 (드래그 순서 변경 + 이름 수정/추가/삭제) */}
             {effectiveCategories.map((cat, idx) => {
               const on           = activeCat === cat.name
@@ -507,11 +531,11 @@ export default function LayoutC({ sites, loading, addSite, updateSite, updateLas
               ))
             ) : (
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>{search ? '🔍' : '📂'}</div>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>{search ? '🔍' : isDormantMode ? '💤' : '📂'}</div>
                 <p style={{ fontSize: 15, fontWeight: 600, color: C.textSub, margin: '0 0 6px' }}>
-                  {search ? `'${search}' 검색 결과가 없어요.` : '아직 등록된 사이트가 없어요.'}
+                  {search ? `'${search}' 검색 결과가 없어요.` : isDormantMode ? '휴면 사이트가 없어요.' : '아직 등록된 사이트가 없어요.'}
                 </p>
-                {!search && (
+                {!search && !isDormantMode && (
                   <button onClick={() => setShowAdd(true)} style={{ marginTop: 10, background: C.primary, color: '#fff', border: 'none', borderRadius: C.btnRadius, padding: '10px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                     + 사이트 추가
                   </button>

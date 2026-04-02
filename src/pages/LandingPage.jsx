@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useDirectory } from '../hooks/useDirectory'
 import { useCategories } from '../hooks/useCategories'
@@ -115,10 +116,18 @@ export default function LandingPage() {
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.primary, display: 'inline-block' }} />
             <span style={{ fontSize: 18, fontWeight: 800, color: C.dark, letterSpacing: '-0.5px' }}>SiteBook</span>
           </div>
-          <div style={{ display: 'flex', gap: 32 }}>
+          <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
             {['내 사이트', '사이트 디렉토리'].map(m => (
               <a key={m} href="#" style={{ fontSize: 14, color: C.textSub, textDecoration: 'none', fontWeight: 500 }}>{m}</a>
             ))}
+            <Link to="/download" style={{
+              fontSize: 13, fontWeight: 700, textDecoration: 'none',
+              color: C.primary,
+              background: C.primaryLight,
+              borderRadius: 999, padding: '5px 14px',
+            }}>
+              ⬇ 런처 다운로드
+            </Link>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* 다크모드 토글 */}
@@ -392,8 +401,18 @@ export default function LandingPage() {
 
       {/* ── 7. FOOTER ────────────────────────────── */}
       <footer style={{ background: C.footerBg, padding: '22px 24px', textAlign: 'center' }}>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', margin: 0 }}>
-          © 2025 SiteBook · 이용약관 · 개인정보처리방침
+        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span>© 2025 SiteBook</span>
+          <span style={{ opacity: 0.4 }}>·</span>
+          <Link to="/terms"   style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.85)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+          >이용약관</Link>
+          <span style={{ opacity: 0.4 }}>·</span>
+          <Link to="/privacy" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.85)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+          >개인정보처리방침</Link>
         </p>
       </footer>
 

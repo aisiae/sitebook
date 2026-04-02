@@ -1,25 +1,25 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../common/Navbar'
 import AddSiteModal from '../common/AddSiteModal'
 import CreateCollectionModal from '../collections/CreateCollectionModal'
 import { FaviconImg } from '../../utils/favicon'
 import { useAuth } from '../../hooks/useAuth'
-import { useCategories } from '../../hooks/useCategories'
+import { useUserCategories } from '../../hooks/useUserCategories'
 import { STATUS_LABEL, STATUS_STYLE } from '../../lib/constants'
 import { useTheme } from '../../store/themeContext'
 
 const LAYOUT_OPTIONS = [
-  { type: 'A', icon: '⊞', label: '카드' },
-  { type: 'B', icon: '≡', label: '리스트' },
   { type: 'C', icon: '⊡', label: '폴더' },
+  { type: 'B', icon: '≡', label: '리스트' },
+  { type: 'A', icon: '⊞', label: '카드' },
 ]
 
 function relativeDate(ts) {
   if (!ts) return '-'
   const date = ts.toDate ? ts.toDate() : new Date(ts)
   const days = Math.floor((Date.now() - date.getTime()) / 86400000)
-  if (days === 0) return '오늘'
+  if (days <= 0) return '오늘'
   if (days === 1) return '어제'
   if (days < 7)  return `${days}일 전`
   if (days < 30) return `${Math.floor(days / 7)}주 전`
@@ -116,9 +116,20 @@ export default function LayoutA({ sites, loading, addSite, updateSite, updateLas
   const C             = useTheme()
   const { user }      = useAuth()
   const navigate      = useNavigate()
-  const { categories } = useCategories()
+  const { categories: rawCategories } = useUserCategories()
   const [activeCat, setActiveCat]     = useState(null)
   const [activeSubcat, setActiveSubcat] = useState(null)
+
+  // useUserCategories 로드 전이면 sites에서 직접 파생
+  const categories = useMemo(() => {
+    if (rawCategories.length > 0) return rawCategories
+    const seen = new Map()
+    sites.forEach(s => {
+      const cats = Array.isArray(s.category) ? s.category : (s.category ? [s.category] : [])
+      cats.forEach(cat => { if (cat && !seen.has(cat)) seen.set(cat, { name: cat, emoji: '📁' }) })
+    })
+    return [...seen.values()]
+  }, [rawCategories, sites])
   const [search, setSearch]           = useState('')
   const [showAdd, setShowAdd]         = useState(false)
   const [editingSite, setEditingSite] = useState(null)

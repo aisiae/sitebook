@@ -1,24 +1,24 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../common/Navbar'
 import AddSiteModal from '../common/AddSiteModal'
 import CreateCollectionModal from '../collections/CreateCollectionModal'
 import { FaviconImg } from '../../utils/favicon'
-import { useCategories } from '../../hooks/useCategories'
+import { useUserCategories } from '../../hooks/useUserCategories'
 import { STATUS_LABEL, STATUS_STYLE } from '../../lib/constants'
 import { useTheme } from '../../store/themeContext'
 
 const LAYOUT_OPTIONS = [
-  { type: 'A', icon: '⊞', label: '카드' },
-  { type: 'B', icon: '≡', label: '리스트' },
   { type: 'C', icon: '⊡', label: '폴더' },
+  { type: 'B', icon: '≡', label: '리스트' },
+  { type: 'A', icon: '⊞', label: '카드' },
 ]
 
 function relativeDate(ts) {
   if (!ts) return '-'
   const date = ts.toDate ? ts.toDate() : new Date(ts)
   const days = Math.floor((Date.now() - date.getTime()) / 86400000)
-  if (days === 0) return '오늘'
+  if (days <= 0) return '오늘'
   if (days === 1) return '어제'
   if (days < 7)  return `${days}일 전`
   if (days < 30) return `${Math.floor(days / 7)}주 전`
@@ -139,9 +139,20 @@ function ListRow({ site, onOpen, onEdit, isDeleting, onDeleteStart, onDeleteCanc
 export default function LayoutB({ sites, loading, addSite, updateSite, updateLastVisited, deleteSite, layoutType, setLayoutType, createCollection }) {
   const C                                 = useTheme()
   const navigate                          = useNavigate()
-  const { categories }                    = useCategories()
+  const { categories: rawCategories }     = useUserCategories()
   const [activeCat, setActiveCat]         = useState(null)
   const [activeSubcat, setActiveSubcat]   = useState(null)
+
+  // useUserCategories 로드 전이면 sites에서 직접 파생
+  const categories = useMemo(() => {
+    if (rawCategories.length > 0) return rawCategories
+    const seen = new Map()
+    sites.forEach(s => {
+      const cats = Array.isArray(s.category) ? s.category : (s.category ? [s.category] : [])
+      cats.forEach(cat => { if (cat && !seen.has(cat)) seen.set(cat, { name: cat, emoji: '📁' }) })
+    })
+    return [...seen.values()]
+  }, [rawCategories, sites])
   const [search, setSearch]               = useState('')
   const [sortField, setSortField]         = useState('lastVisitedAt')
   const [sortDir, setSortDir]             = useState('desc')
@@ -316,7 +327,7 @@ export default function LayoutB({ sites, loading, addSite, updateSite, updateLas
               </button>
               {categories.map(cat => {
                 const on    = activeCat === cat.name
-                const count = sites.filter(s => s.category === cat.name).length
+                const count = sites.filter(s => Array.isArray(s.category) ? s.category.includes(cat.name) : s.category === cat.name).length
                 if (count === 0) return null
                 return (
                   <button key={cat.id} onClick={() => handleCatChange(cat.name)} style={{ padding: '5px 14px', borderRadius: 999, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', background: on ? C.primary : C.cardBg, color: on ? '#fff' : C.textSub, boxShadow: on ? 'none' : '0 1px 4px rgba(0,0,0,0.07)' }}>

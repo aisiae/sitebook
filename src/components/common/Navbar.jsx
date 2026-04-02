@@ -5,7 +5,6 @@ import { useSites } from '../../hooks/useSites'
 import { useTheme, useThemeControl } from '../../store/themeContext'
 import { useGlobalStats } from '../../hooks/useGlobalStats'
 import { useDirectory } from '../../hooks/useDirectory'
-import { useCategories } from '../../hooks/useCategories'
 
 export default function Navbar() {
   const { user, isAdmin, logout }       = useAuth()
@@ -15,7 +14,6 @@ export default function Navbar() {
   const { isDark, toggleTheme }         = useThemeControl()
   const { totalUsers }                  = useGlobalStats()
   const { sites: dirSites }             = useDirectory()
-  const { categories: dirCats }         = useCategories()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting]         = useState(false)
@@ -293,9 +291,6 @@ export default function Navbar() {
       }}>
         <span style={{ fontSize: 11, color: C.textMuted }}>
           🔍 <span style={{ fontWeight: 700, color: C.textSub }}>{dirSites.length}</span> 큐레이션 사이트
-        </span>
-        <span style={{ fontSize: 11, color: C.textMuted }}>
-          📂 <span style={{ fontWeight: 700, color: C.textSub }}>{dirCats.length}</span> 카테고리
         </span>
         <span style={{ fontSize: 11, color: C.textMuted }}>
           👥 <span style={{ fontWeight: 700, color: C.primary }}>
