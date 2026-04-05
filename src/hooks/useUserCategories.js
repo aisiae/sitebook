@@ -35,14 +35,20 @@ export function useUserCategories() {
     return unsub
   }, [user])
 
-  /** 카테고리 순서 일괄 업데이트 (이름 배열로 order 재지정) */
+  /** 카테고리 순서 일괄 업데이트 (이름 배열로 order 재지정)
+   *  Firestore에 없는 카테고리(sites에서 파생된 것)는 새로 생성 */
   const updateCategoryOrder = async (nameArray) => {
     if (!user) return
     const batch = writeBatch(db)
+    const colRef = collection(db, 'users', user.uid, 'categories')
     nameArray.forEach((name, idx) => {
       const cat = categories.find(c => c.name === name)
       if (cat?.id) {
+        // 기존 문서 업데이트
         batch.update(doc(db, 'users', user.uid, 'categories', cat.id), { order: idx })
+      } else {
+        // Firestore에 없는 카테고리 → 새로 생성
+        batch.set(doc(colRef), { name, emoji: '📁', order: idx })
       }
     })
     await batch.commit()

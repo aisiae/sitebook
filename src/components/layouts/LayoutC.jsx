@@ -201,7 +201,8 @@ export default function LayoutC({ sites, loading, addSite, updateSite, updateLas
   const handleDrop = (e, toIdx) => {
     e.preventDefault()
     if (dragIdx === null || dragIdx === toIdx) { setDragIdx(null); setDropIdx(null); return }
-    const newOrder = [...categories]
+    // Use effectiveCategories — same array used for rendering, so indices always match
+    const newOrder = [...effectiveCategories]
     const [moved] = newOrder.splice(dragIdx, 1)
     newOrder.splice(toIdx, 0, moved)
     updateCategoryOrder(newOrder.map(c => c.name))

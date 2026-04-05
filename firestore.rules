@@ -16,9 +16,23 @@ service cloud.firestore {
                          && request.auth.uid == userId;
     }
 
+    // ── 사용자 카테고리 (순서 포함) ──────────────────────────────
+    // 본인 데이터만 읽기/쓰기 허용
+    match /users/{userId}/categories/{categoryId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+
     // ── 사용자 설정 (카테고리 순서 등) ───────────────────────────
     // 본인 데이터만 읽기/쓰기 허용
     match /users/{userId}/settings/{settingId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+
+    // ── 런처 아이템 (SiteBook Launcher 앱 전용) ─────────────────
+    // 본인 데이터만 읽기/쓰기 허용
+    match /launcher/{userId}/items/{itemId} {
       allow read, write: if request.auth != null
                          && request.auth.uid == userId;
     }
