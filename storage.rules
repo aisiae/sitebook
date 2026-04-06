@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // releases 폴더: 누구나 읽기 가능 (로그인 불필요) — 런처 인스톨러 배포용
+    match /releases/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // 그 외 파일: 본인만 읽기/쓰기
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
