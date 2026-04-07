@@ -3,6 +3,10 @@ import Navbar from '../components/common/Navbar'
 import { useDirectory } from '../hooks/useDirectory'
 import { useCategories } from '../hooks/useCategories'
 import { analyzeSite, getLoadingMessage } from '../utils/analyzeSite'
+import { collection, getDocs } from 'firebase/firestore'
+import { db } from '../lib/firebase'
+import { useAuthContext } from '../store/authContext'
+import { FaviconImg } from '../utils/favicon'
 
 const C = {
   primary:      '#534AB7',
@@ -728,13 +732,178 @@ function CategoryManager() {
 // ─────────────────────────────────────────────
 // Admin page
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// 내 사이트 → 디렉토리 불러오기 모달
+// ─────────────────────────────────────────────
+function ImportFromMySitesModal({ directorySites, onClose, onImport }) {
+  const { user }         = useAuthContext()
+  const [mySites, setMySites]   = useState([])
+  const [loadingMy, setLoading] = useState(true)
+  const [selected, setSelected] = useState(new Set())
+  const [importing, setImporting] = useState(false)
+
+  // 이미 디렉토리에 등록된 URL 집합
+  const existingUrls = new Set(directorySites.map(s => (s.url || '').replace(/\/$/, '')))
+
+  useEffect(() => {
+    if (!user) return
+    getDocs(collection(db, 'users', user.uid, 'sites')).then(snap => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      data.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'))
+      setMySites(data)
+      setLoading(false)
+    }).catch(() => setLoading(false))
+  }, [user])
+
+  const toggle = (id) => setSelected(prev => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
+  const toggleAll = () => {
+    const eligible = mySites.filter(s => !existingUrls.has((s.url || '').replace(/\/$/, '')))
+    if (selected.size === eligible.length) setSelected(new Set())
+    else setSelected(new Set(eligible.map(s => s.id)))
+  }
+
+  const handleImport = async () => {
+    const toImport = mySites.filter(s => selected.has(s.id))
+    if (!toImport.length) return
+    setImporting(true)
+    for (const s of toImport) {
+      await onImport({
+        name:      s.name || '',
+        url:       s.url  || '',
+        icon:      '🌐',
+        category:  s.category ? [s.category] : [],
+        shortDesc: '',
+        tags:      '',
+      })
+    }
+    setImporting(false)
+    onClose()
+  }
+
+  const eligible = mySites.filter(s => !existingUrls.has((s.url || '').replace(/\/$/, '')))
+  const alreadyIn = mySites.filter(s => existingUrls.has((s.url || '').replace(/\/$/, '')))
+
+  const overlay = {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+  }
+  const modal = {
+    background: '#fff', borderRadius: 16, width: '100%', maxWidth: 520,
+    maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+    boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+  }
+
+  return (
+    <div style={overlay} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={modal}>
+        {/* Header */}
+        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f0eeff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: C.dark }}>내 사이트에서 불러오기</div>
+            <div style={{ fontSize: 12, color: '#999', marginTop: 3 }}>
+              선택한 사이트를 디렉토리에 등록합니다. 나중에 수정 가능합니다.
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#aaa', lineHeight: 1 }}>×</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px' }}>
+          {loadingMy ? (
+            <div style={{ padding: 32, textAlign: 'center', color: '#aaa', fontSize: 14 }}>불러오는 중...</div>
+          ) : mySites.length === 0 ? (
+            <div style={{ padding: 32, textAlign: 'center', color: '#aaa', fontSize: 14 }}>등록된 사이트가 없습니다.</div>
+          ) : (
+            <>
+              {/* 전체 선택 */}
+              {eligible.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0 12px', borderBottom: '1px solid #f5f4ff', marginBottom: 8 }}>
+                  <input type="checkbox" id="chk-all"
+                    checked={selected.size === eligible.length && eligible.length > 0}
+                    onChange={toggleAll}
+                    style={{ width: 15, height: 15, accentColor: C.primary, cursor: 'pointer' }}
+                  />
+                  <label htmlFor="chk-all" style={{ fontSize: 13, fontWeight: 600, color: C.dark, cursor: 'pointer' }}>
+                    전체 선택 ({eligible.length}개)
+                  </label>
+                </div>
+              )}
+
+              {/* 미등록 사이트 목록 */}
+              {eligible.map(s => (
+                <label key={s.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '9px 8px', borderRadius: 8, cursor: 'pointer',
+                  background: selected.has(s.id) ? C.primaryLight : 'transparent',
+                  transition: 'background 0.12s',
+                }}>
+                  <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggle(s.id)}
+                    style={{ width: 15, height: 15, accentColor: C.primary, flexShrink: 0, cursor: 'pointer' }}
+                  />
+                  <FaviconImg url={s.url}
+                    style={{ width: 22, height: 22, borderRadius: 6, objectFit: 'contain', flexShrink: 0 }}
+                    fallback={<span style={{ fontSize: 18 }}>🌐</span>}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.dark, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+                    <div style={{ fontSize: 11, color: '#aaa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.url}</div>
+                  </div>
+                  <span style={{ fontSize: 11, color: '#bbb', flexShrink: 0 }}>{s.category || ''}</span>
+                </label>
+              ))}
+
+              {/* 이미 등록된 사이트 */}
+              {alreadyIn.length > 0 && (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#bbb', letterSpacing: 0.8, textTransform: 'uppercase', margin: '16px 0 8px', padding: '8px 0 0', borderTop: '1px solid #f5f4ff' }}>
+                    이미 디렉토리에 있음
+                  </div>
+                  {alreadyIn.map(s => (
+                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 8px', opacity: 0.4 }}>
+                      <FaviconImg url={s.url}
+                        style={{ width: 22, height: 22, borderRadius: 6, objectFit: 'contain', flexShrink: 0 }}
+                        fallback={<span style={{ fontSize: 18 }}>🌐</span>}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.dark, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+                      </div>
+                      <span style={{ fontSize: 10, color: C.primary, fontWeight: 700 }}>등록됨</span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '14px 24px', borderTop: '1px solid #f0eeff', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button onClick={onClose}
+            style={{ padding: '9px 18px', border: '1px solid #e0deff', borderRadius: C.btnRadius, background: '#fff', color: '#666', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            취소
+          </button>
+          <button onClick={handleImport} disabled={importing || selected.size === 0}
+            style={{ padding: '9px 20px', border: 'none', borderRadius: C.btnRadius, background: selected.size === 0 ? '#ccc' : C.primary, color: '#fff', fontSize: 13, fontWeight: 700, cursor: selected.size === 0 ? 'default' : 'pointer' }}>
+            {importing ? '등록 중...' : `${selected.size}개 디렉토리에 추가`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Admin() {
   const { sites, loading, addSite, updateSite, deleteSite, toggleAd } = useDirectory()
   const [adminTab, setAdminTab] = useState('sites')
-  const [showAdd, setShowAdd]   = useState(false)
-  const [editSite, setEditSite] = useState(null)
-  const [deleteId, setDeleteId] = useState(null)
-  const [deleting, setDeleting] = useState(false)
+  const [showAdd, setShowAdd]       = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [editSite, setEditSite]     = useState(null)
+  const [deleteId, setDeleteId]     = useState(null)
+  const [deleting, setDeleting]     = useState(false)
 
   const handleDelete = async (id) => {
     setDeleting(true)
@@ -789,10 +958,16 @@ export default function Admin() {
                   총 <strong style={{ color: C.primary }}>{sites.length}</strong>개의 사이트가 등록되어 있습니다.
                 </p>
               </div>
-              <button onClick={() => setShowAdd(true)}
-                style={{ background: C.primary, color: '#fff', border: 'none', borderRadius: C.btnRadius, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 12px rgba(83,74,183,0.3)' }}>
-                + 사이트 추가
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setShowImport(true)}
+                  style={{ background: '#fff', color: C.primary, border: `1.5px solid ${C.primary}`, borderRadius: C.btnRadius, padding: '10px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  ⬆ 내 사이트에서 불러오기
+                </button>
+                <button onClick={() => setShowAdd(true)}
+                  style={{ background: C.primary, color: '#fff', border: 'none', borderRadius: C.btnRadius, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 12px rgba(83,74,183,0.3)' }}>
+                  + 사이트 추가
+                </button>
+              </div>
             </div>
 
             <div style={{ background: '#fff', border: '0.5px solid rgba(83,74,183,0.12)', borderRadius: C.cardRadius, overflowX: 'auto' }}>
@@ -899,6 +1074,13 @@ export default function Admin() {
       )}
       {editSite && (
         <SiteFormModal title="사이트 수정" initial={editSite} allSites={sites} onClose={() => setEditSite(null)} onSave={(form) => updateSite(editSite.id, form)} />
+      )}
+      {showImport && (
+        <ImportFromMySitesModal
+          directorySites={sites}
+          onClose={() => setShowImport(false)}
+          onImport={addSite}
+        />
       )}
     </div>
   )
